@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { FIXTURE_MODIFIERS, FixtureProduct } from '@/lib/store/fixtures';
+import React, { useState, useMemo } from 'react';
+import { FIXTURE_MODIFIERS, FixtureProduct, FixtureModifierGroup } from '@/lib/store/fixtures';
 import { OrderItemModifierOption } from '@/lib/store/restaurant-store';
-import { X, Plus, Minus, Star, Zap, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { X, Plus, Minus, Star, Zap, ShoppingBag, ArrowLeft, Check } from 'lucide-react';
 import { VoiceInputField } from './voice-input-field';
 
 interface ModifierModalProps {
@@ -14,46 +14,98 @@ interface ModifierModalProps {
 
 export function ModifierModal({ product, onClose, onAddToCart }: ModifierModalProps) {
   const [quantity, setQuantity] = useState(1);
-  const [selectedNoodle, setSelectedNoodle] = useState('เส้นเล็ก');
-  const [selectedSize, setSelectedSize] = useState('ธรรมดา');
-  const [selectedSpicy, setSelectedSpicy] = useState('เผ็ดปกติ');
-  const [selectedToppings, setSelectedToppings] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
-  // Calculate modifier price delta
-  const noodleGroup = FIXTURE_MODIFIERS.find((g) => g.name === 'เลือกชนิดเส้น');
-  const sizeGroup = FIXTURE_MODIFIERS.find((g) => g.name === 'ระดับความพิเศษ');
-  const toppingGroup = FIXTURE_MODIFIERS.find((g) => g.name === 'เพิ่มเครื่อง / ท็อปปิ้ง');
+  // 1. Gather all active modifier groups for this product
+  const activeGroups = useMemo<FixtureModifierGroup[]>(() => {
+    const defaultIds = product.category.includes('ก๋วยเตี๋ยว') || product.category.includes('บะหมี่')
+      ? ['mod-01', 'mod-02', 'mod-03', 'mod-04']
+      : product.category.includes('เครื่องดื่ม')
+      ? ['mod-05']
+      : ['mod-02', 'mod-04'];
 
-  const noodlePrice = noodleGroup?.options.find((o) => o.name === selectedNoodle)?.price || 0;
-  const sizePrice = sizeGroup?.options.find((o) => o.name === selectedSize)?.price || 0;
-  const toppingsPrice = selectedToppings.reduce((sum, name) => {
-    const opt = toppingGroup?.options.find((o) => o.name === name);
-    return sum + (opt?.price || 0);
-  }, 0);
+    const targetIds = product.modifierGroupIds || defaultIds;
+    const standardGroups = FIXTURE_MODIFIERS.filter((g) => targetIds.includes(g.id));
+    const customGroups = product.customModifiers || [];
+    return [...standardGroups, ...customGroups];
+  }, [product]);
 
-  const modifierTotal = noodlePrice + sizePrice + toppingsPrice;
+  // 2. State for single-select groups and multi-select groups
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    activeGroups.forEach((g) => {
+      if (g.max === 1 || g.required) {
+        const defaultOpt = g.options.find((o) => o.isDefault) || g.options[0];
+        if (defaultOpt) initial[g.id] = defaultOpt.name;
+      }
+    });
+    return initial;
+  });
+
+  const [multiSelectOptions, setMultiSelectOptions] = useState<Record<string, string[]>>({});
+
+  // 3. Calculate total price delta
+  const modifierTotal = useMemo(() => {
+    let sum = 0;
+    activeGroups.forEach((g) => {
+      if (g.max === 1 || g.required) {
+        const selName = selectedOptions[g.id];
+        const opt = g.options.find((o) => o.name === selName);
+        if (opt) sum += opt.price;
+      } else {
+        const selList = multiSelectOptions[g.id] || [];
+        selList.forEach((optName) => {
+          const opt = g.options.find((o) => o.name === optName);
+          if (opt) sum += opt.price;
+        });
+      }
+    });
+    return sum;
+  }, [activeGroups, selectedOptions, multiSelectOptions]);
+
   const unitTotal = product.price + modifierTotal;
   const grandTotal = unitTotal * quantity;
 
-  const toggleTopping = (name: string) => {
-    setSelectedToppings((prev) =>
-      prev.includes(name) ? prev.filter((t) => t !== name) : [...prev, name]
-    );
+  // Handlers
+  const handleSingleSelect = (groupId: string, optionName: string) => {
+    setSelectedOptions((prev) => ({ ...prev, [groupId]: optionName }));
+  };
+
+  const handleToggleMultiSelect = (groupId: string, optionName: string) => {
+    setMultiSelectOptions((prev) => {
+      const current = prev[groupId] || [];
+      const updated = current.includes(optionName)
+        ? current.filter((item) => item !== optionName)
+        : [...current, optionName];
+      return { ...prev, [groupId]: updated };
+    });
   };
 
   const handleConfirm = () => {
     const modifiersList: OrderItemModifierOption[] = [];
 
-    if (product.category.includes('ก๋วยเตี๋ยว')) {
-      modifiersList.push({ groupName: 'เลือกเส้น', optionName: selectedNoodle, price: noodlePrice });
-      modifiersList.push({ groupName: 'ความพิเศษ', optionName: selectedSize, price: sizePrice });
-      modifiersList.push({ groupName: 'ความเผ็ด', optionName: selectedSpicy, price: 0 });
-    }
-
-    selectedToppings.forEach((t) => {
-      const opt = toppingGroup?.options.find((o) => o.name === t);
-      modifiersList.push({ groupName: 'เพิ่มท็อปปิ้ง', optionName: t, price: opt?.price || 0 });
+    activeGroups.forEach((g) => {
+      if (g.max === 1 || g.required) {
+        const selName = selectedOptions[g.id];
+        if (selName) {
+          const opt = g.options.find((o) => o.name === selName);
+          modifiersList.push({
+            groupName: g.name,
+            optionName: selName,
+            price: opt ? opt.price : 0,
+          });
+        }
+      } else {
+        const selList = multiSelectOptions[g.id] || [];
+        selList.forEach((optName) => {
+          const opt = g.options.find((o) => o.name === optName);
+          modifiersList.push({
+            groupName: g.name,
+            optionName: optName,
+            price: opt ? opt.price : 0,
+          });
+        });
+      }
     });
 
     onAddToCart(quantity, modifiersList, notes);
@@ -71,7 +123,7 @@ export function ModifierModal({ product, onClose, onAddToCart }: ModifierModalPr
             <ArrowLeft className='w-4 h-4 sm:w-5 sm:h-5' />
           </button>
 
-          <h3 className='text-sm sm:text-base font-black text-white tracking-tight'>รายละเอียดเมนูอาหาร</h3>
+          <h3 className='text-sm sm:text-base font-black text-white tracking-tight'>รายละเอียด & ตัวเลือกเมนู</h3>
 
           <button
             onClick={onClose}
@@ -101,213 +153,108 @@ export function ModifierModal({ product, onClose, onAddToCart }: ModifierModalPr
           {/* Dish Title & Description */}
           <div>
             <h2 className='text-lg sm:text-2xl font-black text-slate-900 leading-snug'>{product.name}</h2>
-            <p className='text-[11px] sm:text-xs text-slate-500 mt-1 leading-relaxed'>{product.description}</p>
+            {product.description && (
+              <p className='text-[11px] sm:text-xs text-slate-500 mt-1 leading-relaxed'>{product.description}</p>
+            )}
           </div>
 
-          {/* Quick Badges */}
-          <div className='flex items-center gap-3 py-2 border-y border-slate-100 text-[10px] sm:text-[11px] text-slate-600'>
-            <span className='flex items-center gap-1 font-bold text-amber-600'>
-              <Star className='w-3.5 h-3.5 fill-amber-500 text-amber-500' />
-              <span>4.9 Rating (สูตรเด็ดนายเอก)</span>
-            </span>
-            <span>•</span>
-            <span className='flex items-center gap-1 font-semibold text-emerald-700'>
-              <Zap className='w-3.5 h-3.5' />
-              <span>ปรุงสดใหม่จานต่อจาน</span>
-            </span>
-          </div>
-
-          {/* Modifiers: Choice of Noodles */}
-          {product.category.includes('ก๋วยเตี๋ยว') && (
-            <div className='space-y-2'>
-              <label className='font-black text-slate-900 text-xs flex items-center justify-between'>
-                <span>1. เลือกชนิดเส้น (จำเป็น)</span>
-                <span className='text-[10px] font-extrabold text-[#0C3B2E] bg-emerald-50 px-2 py-0.5 rounded-full'>
-                  เลือก 1 อย่าง
-                </span>
-              </label>
-              <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
-                {noodleGroup?.options.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type='button'
-                    onClick={() => setSelectedNoodle(opt.name)}
-                    className={
-                      'p-2.5 sm:p-3 rounded-2xl border text-left font-black transition-all flex items-center justify-between cursor-pointer ' +
-                      (selectedNoodle === opt.name
-                        ? 'border-[#0C3B2E] bg-[#0C3B2E] text-white shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-slate-50/50')
-                    }
-                  >
-                    <span className='text-xs'>{opt.name}</span>
-                    {opt.price > 0 && (
-                      <span
-                        className={
-                          'text-[10px] ' +
-                          (selectedNoodle === opt.name ? 'text-[#84CC16]' : 'text-[#D9531E]')
-                        }
-                      >
-                        +{opt.price}฿
+          {/* Dynamic Modifier Groups List */}
+          {activeGroups.map((group) => {
+            const isSingle = group.max === 1 || group.required;
+            return (
+              <div key={group.id} className='space-y-2 pt-2 border-t border-slate-100'>
+                <div className='flex items-center justify-between'>
+                  <label className='font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5'>
+                    <span>{group.name}</span>
+                    {group.required && (
+                      <span className='text-[9.5px] text-red-600 bg-red-50 px-2 py-0.5 rounded-full font-bold border border-red-200'>
+                        * จำเป็น
                       </span>
                     )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+                  </label>
+                  <span className='text-[10.5px] text-slate-400 font-medium'>
+                    {isSingle ? 'เลือกได้ 1 อย่าง' : 'เลือกได้หลายอย่าง'}
+                  </span>
+                </div>
 
-          {/* Modifiers: Size */}
-          {product.category.includes('ก๋วยเตี๋ยว') && (
-            <div className='space-y-2'>
-              <label className='font-black text-slate-900 text-xs flex items-center justify-between'>
-                <span>2. ระดับความพิเศษ</span>
-                <span className='text-[10px] font-extrabold text-[#0C3B2E] bg-emerald-50 px-2 py-0.5 rounded-full'>
-                  เลือก 1 อย่าง
-                </span>
-              </label>
-              <div className='grid grid-cols-3 gap-2'>
-                {sizeGroup?.options.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type='button'
-                    onClick={() => setSelectedSize(opt.name)}
-                    className={
-                      'p-2.5 sm:p-3 rounded-2xl border text-center font-black transition-all cursor-pointer ' +
-                      (selectedSize === opt.name
-                        ? 'border-[#D9531E] bg-[#D9531E] text-white shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-slate-50/50')
-                    }
-                  >
-                    <div className='text-xs'>{opt.name}</div>
-                    {opt.price > 0 && (
-                      <div
+                <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
+                  {group.options.map((opt) => {
+                    const isSelected = isSingle
+                      ? selectedOptions[group.id] === opt.name
+                      : (multiSelectOptions[group.id] || []).includes(opt.name);
+
+                    return (
+                      <button
+                        key={opt.id}
+                        type='button'
+                        onClick={() => {
+                          if (isSingle) handleSingleSelect(group.id, opt.name);
+                          else handleToggleMultiSelect(group.id, opt.name);
+                        }}
                         className={
-                          'text-[10px] mt-0.5 ' +
-                          (selectedSize === opt.name ? 'text-amber-200' : 'text-[#D9531E]')
+                          'p-2.5 rounded-2xl text-left border transition-all cursor-pointer flex items-center justify-between gap-1 ' +
+                          (isSelected
+                            ? 'bg-[#0C3B2E] text-white border-[#0C3B2E] shadow-md ring-2 ring-[#84CC16]'
+                            : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200')
                         }
                       >
-                        +{opt.price}฿
-                      </div>
-                    )}
-                  </button>
-                ))}
+                        <div className='truncate'>
+                          <span className='font-bold block truncate'>{opt.name}</span>
+                          {opt.price > 0 && (
+                            <span className={'text-[10px] font-semibold ' + (isSelected ? 'text-[#84CC16]' : 'text-[#D9531E]')}>
+                              +฿{opt.price.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                        {isSelected && <Check className='w-3.5 h-3.5 shrink-0 text-[#84CC16]' />}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })}
 
-          {/* Modifiers: Spicy Level */}
-          {product.category.includes('ก๋วยเตี๋ยว') && (
-            <div className='space-y-2'>
-              <label className='font-black text-slate-900 text-xs flex items-center justify-between'>
-                <span>3. ระดับความเผ็ด</span>
-                <span className='text-[10px] font-semibold text-slate-400'>พริกคั่วโบราณ</span>
-              </label>
-              <div className='grid grid-cols-2 sm:grid-cols-4 gap-2'>
-                {['ไม่เผ็ด', 'เผ็ดน้อย', 'เผ็ดปกติ', 'เผ็ดมาก'].map((spicy) => (
-                  <button
-                    key={spicy}
-                    type='button'
-                    onClick={() => setSelectedSpicy(spicy)}
-                    className={
-                      'p-2 sm:p-2.5 rounded-2xl border text-center font-bold text-xs transition-all cursor-pointer ' +
-                      (selectedSpicy === spicy
-                        ? 'border-red-500 bg-red-50 text-red-700 ring-2 ring-red-300 font-black'
-                        : 'border-slate-200 text-slate-600 bg-slate-50/50')
-                    }
-                  >
-                    {spicy}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Modifiers: Extra Toppings */}
-          <div className='space-y-2'>
-            <label className='font-black text-slate-900 text-xs flex items-center justify-between'>
-              <span>4. เพิ่มเครื่องพิเศษ (เลือกได้หลายอย่าง)</span>
-              <span className='text-[10px] font-semibold text-slate-400'>ท็อปปิ้ง</span>
+          {/* Notes Input Field with Voice Mic */}
+          <div className='space-y-1.5 pt-2 border-t border-slate-100'>
+            <label className='font-bold text-slate-800 text-xs flex items-center justify-between'>
+              <span>หมายเหตุเพิ่มเติม (เช่น ไม่ใส่ผัก, ขอน้ำซุปเพิ่ม)</span>
+              <span className='text-[10px] text-slate-400 font-normal'>กดปุ่มไมค์เพื่อพูดได้</span>
             </label>
-            <div className='space-y-1.5'>
-              {toppingGroup?.options.map((opt) => {
-                const isChecked = selectedToppings.includes(opt.name);
-                return (
-                  <div
-                    key={opt.id}
-                    onClick={() => toggleTopping(opt.name)}
-                    className={
-                      'p-2.5 sm:p-3 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ' +
-                      (isChecked
-                        ? 'border-[#0C3B2E] bg-emerald-50/70 text-[#0C3B2E] font-black'
-                        : 'border-slate-200 text-slate-700 bg-slate-50/40 hover:bg-slate-50')
-                    }
-                  >
-                    <div className='flex items-center space-x-2.5'>
-                      <div
-                        className={
-                          'w-5 h-5 rounded-lg flex items-center justify-center border transition-colors ' +
-                          (isChecked
-                            ? 'bg-[#0C3B2E] border-[#0C3B2E] text-white'
-                            : 'border-slate-300 bg-white')
-                        }
-                      >
-                        {isChecked && <span className='text-xs leading-none'>✓</span>}
-                      </div>
-                      <span className='text-xs font-bold'>{opt.name}</span>
-                    </div>
-                    <span className='font-black text-xs text-[#D9531E]'>+{opt.price}฿</span>
-                  </div>
-                );
-              })}
-            </div>
+            <VoiceInputField
+              placeholder='พิมพ์ข้อความ หรือกดปุ่มไมค์เพื่อพูด...'
+              value={notes}
+              onChange={setNotes}
+            />
           </div>
-
-          {/* Voice-Enabled Kitchen Note */}
-          <VoiceInputField
-            value={notes}
-            onChange={setNotes}
-            label='หมายเหตุเพิ่มเติมถึงพ่อครัว (พิมพ์หรือกดไมค์พูด)'
-            placeholder='เช่น ไม่ใส่กระเทียมเจียว, แยกน้ำซุป, ไม่ใส่ถั่วงอก...'
-            quickPresets={[
-              'ไม่ใส่ถั่วงอก',
-              'ไม่ใส่กระเทียมเจียว',
-              'แยกน้ำซุป',
-              'ผักชีเยอะๆ',
-              'น้ำซุปร้อนๆ',
-              'ขอน้ำจิ้มเพิ่ม',
-            ]}
-          />
         </div>
 
-        {/* Sticky Modal Action Footer */}
-        <div className='p-3.5 sm:p-4 border-t border-slate-200 bg-white shadow-2xl flex items-center justify-between gap-3 shrink-0 z-20'>
-          {/* Stepper */}
-          <div className='flex items-center space-x-2 bg-slate-100 rounded-2xl px-2.5 py-1.5 border border-slate-200'>
+        {/* Modal Footer Bar */}
+        <div className='p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0'>
+          {/* Quantity Counter */}
+          <div className='flex items-center space-x-2 bg-white px-3 py-1.5 rounded-2xl border border-slate-200 shadow-xs'>
             <button
-              type='button'
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              className='w-8 h-8 flex items-center justify-center rounded-xl bg-white text-slate-700 hover:bg-slate-200 font-black shadow-xs cursor-pointer active:scale-95'
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className='w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 cursor-pointer active:scale-95'
             >
-              <Minus className='w-4 h-4' />
+              <Minus className='w-3.5 h-3.5' />
             </button>
-            <span className='w-6 text-center font-black text-slate-900 text-sm'>{quantity}</span>
+            <span className='font-black text-sm w-5 text-center text-slate-900'>{quantity}</span>
             <button
-              type='button'
-              onClick={() => setQuantity((q) => q + 1)}
-              className='w-8 h-8 flex items-center justify-center rounded-xl bg-white text-slate-700 hover:bg-slate-200 font-black shadow-xs cursor-pointer active:scale-95'
+              onClick={() => setQuantity(quantity + 1)}
+              className='w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 cursor-pointer active:scale-95'
             >
-              <Plus className='w-4 h-4' />
+              <Plus className='w-3.5 h-3.5' />
             </button>
           </div>
 
-          {/* Confirm Add To Cart Button */}
+          {/* Add to Cart Button */}
           <button
-            type='button'
             onClick={handleConfirm}
-            className='flex-1 py-3.5 sm:py-4 bg-[#84CC16] hover:bg-[#65A30D] text-[#072E20] font-black rounded-2xl text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-xl transition-transform active:scale-95 cursor-pointer'
+            className='flex-1 py-3 bg-[#D9531E] hover:bg-[#B45309] text-white font-bold rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer'
           >
             <ShoppingBag className='w-4 h-4' />
-            <span>ใส่ตะกร้า • ฿{grandTotal.toFixed(2)}</span>
+            <span>เพิ่มลงในบิล (฿{grandTotal.toFixed(2)})</span>
           </button>
         </div>
       </div>

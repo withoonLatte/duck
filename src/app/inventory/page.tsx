@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRestaurant } from '@/lib/store/restaurant-store';
-import { FixtureProduct, FixtureIngredient, FIXTURE_CATEGORIES } from '@/lib/store/fixtures';
+import { FixtureProduct, FixtureIngredient, FIXTURE_CATEGORIES, FIXTURE_MODIFIERS, FixtureModifierGroup } from '@/lib/store/fixtures';
 import { 
   Boxes, 
   UtensilsCrossed, 
@@ -120,6 +120,8 @@ export default function InventoryAndMenuPage() {
       sku: prod.sku,
       station: prod.station,
       imageUrl: prod.imageUrl,
+      modifierGroupIds: prod.modifierGroupIds || (prod.category.includes('ก๋วยเตี๋ยว') ? ['mod-01', 'mod-02', 'mod-03', 'mod-04'] : ['mod-02', 'mod-04']),
+      customModifiers: prod.customModifiers || [],
     });
     setShowProductModal(true);
   };
@@ -708,10 +710,28 @@ export default function InventoryAndMenuPage() {
                     value={productForm.categoryId}
                     onChange={(e) => {
                       const sel = FIXTURE_CATEGORIES.find((c) => c.id === e.target.value);
+                      const selName = sel ? sel.name : productForm.category;
+                      let suggestedMods = ['mod-02', 'mod-04'];
+                      let suggestedStation = productForm.station;
+                      if (selName.includes('ก๋วยเตี๋ยว') || selName.includes('บะหมี่')) {
+                        suggestedMods = ['mod-01', 'mod-02', 'mod-03', 'mod-04'];
+                        suggestedStation = 'NOODLE_STATION';
+                      } else if (selName.includes('เครื่องดื่ม')) {
+                        suggestedMods = ['mod-05'];
+                        suggestedStation = 'BAR_STATION';
+                      } else if (selName.includes('ข้าว')) {
+                        suggestedMods = ['mod-02', 'mod-04'];
+                        suggestedStation = 'DUCK_STATION';
+                      } else if (selName.includes('ซุป')) {
+                        suggestedMods = ['mod-02', 'mod-03', 'mod-04'];
+                        suggestedStation = 'SOUP_STATION';
+                      }
                       setProductForm({
                         ...productForm,
                         categoryId: e.target.value,
-                        category: sel ? sel.name : productForm.category,
+                        category: selName,
+                        station: suggestedStation,
+                        modifierGroupIds: suggestedMods,
                       });
                     }}
                     className='w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium cursor-pointer'
@@ -840,6 +860,123 @@ export default function InventoryAndMenuPage() {
                     />
                   </label>
                 )}
+              </div>
+
+              {/* MODIFIERS & OPTIONS SELECTION SECTION */}
+              <div className='p-3.5 bg-slate-50 rounded-2xl border border-slate-200/90 space-y-3'>
+                <div className='flex items-center justify-between'>
+                  <label className='font-bold text-slate-800 text-xs flex items-center gap-1.5'>
+                    <span>🍜 ตัวเลือกเสริม & ตัวเลือกเส้น (Options & Modifiers)</span>
+                  </label>
+                  <span className='text-[10px] text-slate-500 font-normal'>ติ๊กถูกเพื่อเปิดใช้งานตัวเลือกสำหรับเมนูนี้</span>
+                </div>
+
+                {/* Preset Modifier Toggles */}
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                  {FIXTURE_MODIFIERS.map((mod) => {
+                    const isChecked = productForm.modifierGroupIds?.includes(mod.id);
+                    return (
+                      <label
+                        key={mod.id}
+                        className={
+                          'p-2.5 rounded-xl border flex items-start space-x-2.5 cursor-pointer transition-all ' +
+                          (isChecked
+                            ? 'bg-emerald-50/80 border-emerald-400 text-[#0C3B2E] shadow-2xs'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100')
+                        }
+                      >
+                        <input
+                          type='checkbox'
+                          checked={isChecked}
+                          onChange={(e) => {
+                            const current = productForm.modifierGroupIds || [];
+                            if (e.target.checked) {
+                              setProductForm({ ...productForm, modifierGroupIds: [...current, mod.id] });
+                            } else {
+                              setProductForm({ ...productForm, modifierGroupIds: current.filter((id) => id !== mod.id) });
+                            }
+                          }}
+                          className='mt-0.5 rounded text-[#0C3B2E] focus:ring-[#0C3B2E]'
+                        />
+                        <div className='flex-1 leading-tight'>
+                          <div className='font-bold text-xs flex items-center justify-between'>
+                            <span>{mod.name}</span>
+                            {mod.required && (
+                              <span className='text-[9px] bg-red-100 text-red-700 px-1.5 py-0.2 rounded-full font-semibold'>
+                                จำเป็นต้องเลือก
+                              </span>
+                            )}
+                          </div>
+                          <div className='text-[10px] text-slate-400 mt-1 truncate max-w-[200px]'>
+                            {mod.options.map((o) => `${o.name}${o.price > 0 ? ` (+${o.price}฿)` : ''}`).join(', ')}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Modifiers List & Add Button */}
+                {productForm.customModifiers && productForm.customModifiers.length > 0 && (
+                  <div className='space-y-2 pt-2 border-t border-slate-200/60'>
+                    <span className='font-bold text-xs text-slate-700 block'>กลุ่มตัวเลือกที่สร้างเอง:</span>
+                    {productForm.customModifiers.map((cMod, cIdx) => (
+                      <div key={cIdx} className='p-2.5 bg-white rounded-xl border border-slate-200 space-y-2'>
+                        <div className='flex items-center justify-between'>
+                          <span className='font-bold text-slate-800 text-xs'>{cMod.name}</span>
+                          <button
+                            type='button'
+                            onClick={() => {
+                              const updated = productForm.customModifiers?.filter((_, idx) => idx !== cIdx);
+                              setProductForm({ ...productForm, customModifiers: updated });
+                            }}
+                            className='text-red-500 hover:text-red-700 text-[10.5px] font-bold flex items-center gap-0.5 cursor-pointer'
+                          >
+                            <Trash2 className='w-3 h-3' />
+                            <span>ลบกลุ่มนี้</span>
+                          </button>
+                        </div>
+                        <div className='flex flex-wrap gap-1 text-[10px]'>
+                          {cMod.options.map((opt, oIdx) => (
+                            <span key={oIdx} className='px-2 py-0.5 bg-slate-100 rounded-lg text-slate-700 border border-slate-200 font-medium'>
+                              {opt.name} {opt.price > 0 ? `(+฿${opt.price})` : '(+฿0)'}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Quick Add Custom Option Group Button */}
+                <button
+                  type='button'
+                  onClick={() => {
+                    const groupName = prompt('ระบุชื่อกลุ่มตัวเลือกใหม่ (เช่น เลือกน้ำซุป, ขนาดแก้ว, ประเภทข้าว):');
+                    if (!groupName) return;
+                    const opt1 = prompt('ระบุตัวเลือกที่ 1 (เช่น น้ำใส):') || 'ตัวเลือก 1';
+                    const opt2 = prompt('ระบุตัวเลือกที่ 2 (เช่น น้ำพะโล้เข้มข้น):') || 'ตัวเลือก 2';
+                    const newCustomGroup: FixtureModifierGroup = {
+                      id: 'custom-mod-' + Date.now(),
+                      name: groupName,
+                      required: false,
+                      min: 0,
+                      max: 1,
+                      options: [
+                        { id: 'opt-' + Date.now() + '-1', name: opt1, price: 0, isDefault: true },
+                        { id: 'opt-' + Date.now() + '-2', name: opt2, price: 0 },
+                      ],
+                    };
+                    setProductForm({
+                      ...productForm,
+                      customModifiers: [...(productForm.customModifiers || []), newCustomGroup],
+                    });
+                  }}
+                  className='w-full py-2 bg-white hover:bg-slate-100 border border-dashed border-slate-300 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors'
+                >
+                  <Plus className='w-3.5 h-3.5 text-[#0C3B2E]' />
+                  <span>+ สร้างกลุ่มตัวเลือกใหม่เอง (เช่น เลือกน้ำซุป, ประเภทข้าว, ขนาด)</span>
+                </button>
               </div>
 
               <div>

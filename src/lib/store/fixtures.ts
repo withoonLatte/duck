@@ -9,6 +9,8 @@ export interface FixtureProduct {
   sku: string;
   station: string;
   imageUrl: string;
+  modifierGroupIds?: string[];
+  customModifiers?: FixtureModifierGroup[];
 }
 
 export interface FixtureModifierGroup {
@@ -221,6 +223,20 @@ export const FIXTURE_MODIFIERS: FixtureModifierGroup[] = [
       { id: 'opt-32', name: 'เพิ่มเลือดเป็ดนุ่ม (+10฿)', price: 10 },
       { id: 'opt-33', name: 'เพิ่มไข่ต้มยางมะตูม (+10฿)', price: 10 },
       { id: 'opt-34', name: 'เพิ่มไส้แก้วกรุบกรอบ (+25฿)', price: 25 },
+    ],
+  },
+  {
+    id: 'mod-05',
+    name: 'ระดับความหวาน & น้ำแข็ง',
+    required: false,
+    min: 0,
+    max: 1,
+    options: [
+      { id: 'opt-41', name: 'หวานปกติ (100%)', price: 0, isDefault: true },
+      { id: 'opt-42', name: 'หวานน้อย (50%)', price: 0 },
+      { id: 'opt-43', name: 'ไม่หวาน (0%)', price: 0 },
+      { id: 'opt-44', name: 'น้ำแข็งน้อย', price: 0 },
+      { id: 'opt-45', name: 'แยกน้ำแข็ง (+5฿)', price: 5 },
     ],
   },
 ];
