@@ -20,7 +20,10 @@ import {
   Save, 
   Sparkles,
   ArrowRight,
-  RotateCcw
+  RotateCcw,
+  Camera,
+  Upload,
+  ImageIcon
 } from 'lucide-react';
 
 export default function InventoryAndMenuPage() {
@@ -763,14 +766,80 @@ export default function InventoryAndMenuPage() {
                 </div>
               </div>
 
+              {/* Photo Camera & Gallery Picker */}
               <div>
-                <label className='block font-semibold text-slate-700 mb-1'>URL รูปภาพเมนู</label>
-                <input
-                  type='text'
-                  value={productForm.imageUrl}
-                  onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                  className='w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-[11px] focus:outline-[#0C3B2E]'
-                />
+                <label className='block font-semibold text-slate-700 mb-1.5 flex items-center justify-between'>
+                  <span className='flex items-center gap-1.5'>
+                    <Camera className='w-4 h-4 text-[#0C3B2E]' />
+                    <span>รูปภาพอาหาร (ถ่ายจากกล้อง หรือเลือกจากเครื่อง)</span>
+                  </span>
+                  {productForm.imageUrl && (
+                    <button
+                      type='button'
+                      onClick={() => setProductForm({ ...productForm, imageUrl: '' })}
+                      className='text-[10px] text-red-600 hover:text-red-700 font-bold flex items-center gap-0.5 cursor-pointer'
+                    >
+                      <Trash2 className='w-3 h-3' />
+                      <span>ลบรูปภาพ</span>
+                    </button>
+                  )}
+                </label>
+
+                {productForm.imageUrl ? (
+                  <div className='relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 h-36 flex items-center justify-center group'>
+                    <img
+                      src={productForm.imageUrl}
+                      alt='Product Preview'
+                      className='w-full h-full object-cover'
+                    />
+                    <label className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 text-white text-xs font-bold transition-opacity cursor-pointer'>
+                      <Camera className='w-4 h-4' />
+                      <span>แตะเพื่อถ่ายรูปใหม่ หรือเปลี่ยนรูป</span>
+                      <input
+                        type='file'
+                        accept='image/*'
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setProductForm({ ...productForm, imageUrl: reader.result as string });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className='hidden'
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <label className='flex flex-col items-center justify-center border-2 border-dashed border-emerald-300 hover:border-[#0C3B2E] bg-emerald-50/40 hover:bg-emerald-50/80 rounded-2xl p-5 cursor-pointer transition-all active:scale-[0.99]'>
+                    <div className='w-10 h-10 rounded-2xl bg-emerald-100 text-[#0C3B2E] flex items-center justify-center mb-1.5 shadow-2xs'>
+                      <Camera className='w-5 h-5' />
+                    </div>
+                    <span className='font-bold text-[#0C3B2E] text-xs'>
+                      📸 แตะเพื่อเปิดกล้องถ่ายรูป หรือเลือกรูปจากเครื่อง
+                    </span>
+                    <span className='text-[10px] text-slate-500 mt-0.5'>
+                      รองรับทั้งกล้องมือถือ, แท็บเล็ต, iPad และไฟล์ในคอมพิวเตอร์
+                    </span>
+                    <input
+                      type='file'
+                      accept='image/*'
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setProductForm({ ...productForm, imageUrl: reader.result as string });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className='hidden'
+                    />
+                  </label>
+                )}
               </div>
 
               <div>
