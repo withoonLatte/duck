@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useRestaurant, StoreOrderItem } from '@/lib/store/restaurant-store';
 import { FIXTURE_PRODUCTS, FixtureProduct } from '@/lib/store/fixtures';
 import { ModifierModal } from '@/components/order/modifier-modal';
+import { VoidItemModal } from './void-item-modal';
+import { AIVoiceOrderModal } from '@/components/order/ai-voice-order-modal';
 import { 
   X, 
   UtensilsCrossed, 
@@ -15,7 +17,8 @@ import {
   ShoppingBag,
   ChevronUp,
   Mic,
-  MicOff
+  MicOff,
+  Sparkles
 } from 'lucide-react';
 
 interface POSOrderDrawerProps {
@@ -53,6 +56,7 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
   const [activeModalProduct, setActiveModalProduct] = useState<FixtureProduct | null>(null);
   const [showMobileCartSheet, setShowMobileCartSheet] = useState(false);
   const [voidTargetItem, setVoidTargetItem] = useState<StoreOrderItem | null>(null);
+  const [showVoiceOrderModal, setShowVoiceOrderModal] = useState(false);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   const toggleVoiceSearch = () => {
@@ -182,8 +186,9 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
           <div className='flex-1 flex flex-col overflow-hidden border-r border-slate-200 bg-[#F4F6F5]'>
             {/* PINNED / FIXED TOP: Search & Compact Icon Category Bar */}
             <div className='p-3 sm:p-4 bg-[#F4F6F5] border-b border-slate-200/80 space-y-2.5 shrink-0 shadow-xs z-10'>
-              {/* Search Box with Microphone Voice Search */}
-              <div className='relative flex items-center'>
+              {/* Search Box with AI Voice Ordering Button */}
+              <div className='flex items-center gap-2'>
+                <div className='relative flex-1 flex items-center'>
                 <Search className='w-4 h-4 absolute left-3.5 text-slate-400' />
                 <input
                   type='text'
@@ -215,6 +220,17 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
                       <span className='text-[9px]'>พูด</span>
                     </>
                   )}
+                </button>
+                </div>
+
+                <button
+                  type='button'
+                  onClick={() => setShowVoiceOrderModal(true)}
+                  className='px-3.5 py-2.5 bg-gradient-to-r from-[#0C3B2E] to-[#1a5342] hover:from-[#072E20] hover:to-[#0C3B2E] text-white font-bold rounded-2xl text-xs flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer shrink-0 border border-emerald-400/40'
+                >
+                  <Sparkles className='w-4 h-4 text-[#84CC16] animate-pulse' />
+                  <span className='hidden sm:inline'>สั่งด้วยเสียง AI</span>
+                  <span className='sm:hidden'>AI เสียง</span>
                 </button>
               </div>
 
@@ -476,12 +492,22 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
                   <ShoppingBag className='w-5 h-5 text-[#84CC16]' />
                   <h4 className='font-semibold text-sm'>รายการอาหารในบิล: โต๊ะ {table.number}</h4>
                 </div>
-                <button
-                  onClick={() => setShowMobileCartSheet(false)}
-                  className='px-3 py-1 bg-white/15 text-white rounded-full text-xs font-bold cursor-pointer'
-                >
-                  ปิด
-                </button>
+                <div className='flex items-center gap-2'>
+                  <button
+                    type='button'
+                    onClick={() => setShowVoiceOrderModal(true)}
+                    className='px-2.5 py-1 bg-white/20 text-white rounded-full text-xs font-bold flex items-center gap-1 cursor-pointer'
+                  >
+                    <Sparkles className='w-3 h-3 text-[#84CC16]' />
+                    <span>AI เสียง</span>
+                  </button>
+                  <button
+                    onClick={() => setShowMobileCartSheet(false)}
+                    className='px-3 py-1 bg-white/15 text-white rounded-full text-xs font-bold cursor-pointer'
+                  >
+                    ปิด
+                  </button>
+                </div>
               </div>
 
               {/* Items list */}
@@ -574,16 +600,43 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
             </div>
           </div>
         )}
-      </div>
 
-      {/* Modifier Modal */}
-      {activeModalProduct && (
-        <ModifierModal
-          product={activeModalProduct}
-          onClose={() => setActiveModalProduct(null)}
-          onAddToCart={handleAddToCartWithModifiers}
-        />
-      )}
+        {/* MODIFIER MODAL */}
+        {activeModalProduct && (
+          <ModifierModal
+            product={activeModalProduct}
+            onClose={() => setActiveModalProduct(null)}
+            onAddToCart={handleAddToCartWithModifiers}
+          />
+        )}
+
+        {/* HIGH-SECURITY VOID ITEM MODAL WITH PHOTO & SIGNATURE */}
+        {voidTargetItem && (
+          <VoidItemModal
+            tableId={table.id}
+            tableNumber={table.number}
+            item={voidTargetItem}
+            onClose={() => setVoidTargetItem(null)}
+            onSuccess={() => {
+              setVoidTargetItem(null);
+            }}
+          />
+        )}
+
+        {/* AI VOICE ORDER ASSISTANT MODAL */}
+        {showVoiceOrderModal && (
+          <AIVoiceOrderModal
+            tableNumber={table.number}
+            onClose={() => setShowVoiceOrderModal(false)}
+            onAddItemsToCart={(items) => {
+              items.forEach((item) => {
+                addOrderItem(table.id, item.product, item.quantity, item.modifiers, item.notes);
+              });
+              setShowVoiceOrderModal(false);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
