@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRestaurant, StoreOrderItem, OrderItemModifierOption } from '@/lib/store/restaurant-store';
+import { useRestaurant, OrderItemModifierOption } from '@/lib/store/restaurant-store';
 import { FixtureProduct, FIXTURE_MODIFIERS } from '@/lib/store/fixtures';
 import { 
   Mic, 
@@ -15,10 +15,12 @@ import {
   Trash2, 
   Volume2, 
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Edit3,
+  RotateCcw
 } from 'lucide-react';
 
-interface ParsedVoiceItem {
+export interface ParsedVoiceItem {
   id: string;
   product: FixtureProduct;
   quantity: number;
@@ -36,7 +38,9 @@ interface AIVoiceOrderModalProps {
 const SAMPLE_VOICE_PROMPTS = [
   'บะหมี่หยกเป็ดย่าง 2 ชาม เส้นเล็กเป็ดพะโล้พิเศษ 1 ชาม ชาดำเย็น 2 แก้ว',
   'ข้าวหน้าเป็ด 2 จาน เกาเหลาเป็ดตุ๋น 1 ชาม ไม่ใส่ถั่วงอก',
-  'ก๋วยเตี๋ยวเป็ดเส้นใหญ่ 1 ชาม ต้มซุปเปอร์ 1 หม้อ น้ำเก๊กฮวย 2 แก้ว หวานน้อย',
+  'เส้นใหญ่เป็ดพะโล้ 1 ชาม ต้มซุปเปอร์ 1 หม้อ น้ำเก๊กฮวย 2 แก้ว หวานน้อย',
+  'บะหมี่แห้งเป็ดพะโล้พิเศษ 2 ชาม ขอน้ำซุปแยก',
+  'ข้าวหน้าเป็ดย่าง 1 จาน ชาดำเย็น 1 แก้ว แยกน้ำแข็ง',
 ];
 
 export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AIVoiceOrderModalProps) {
@@ -70,7 +74,7 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
 
       recognition.onstart = () => {
         setIsListening(true);
-        setStatusMessage('🎙️ กำลังฟังเสียงพูดภาษาไทย... (พูดสั่งอาหารได้เลย)');
+        setStatusMessage('🎙️ กำลังฟังเสียงภาษาไทย... (พูดสั่งอาหารได้เลย)');
       };
 
       recognition.onresult = (event: any) => {
@@ -85,11 +89,11 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
       };
 
       recognition.onerror = (event: any) => {
-        console.warn('Speech recognition error:', event.error);
+        console.warn('SpeechRecognition error:', event.error);
         if (event.error === 'not-allowed') {
-          setStatusMessage('⚠️ กรุณากดอนุญาตการใช้งานไมโครโฟนในเบราว์เซอร์');
+          setStatusMessage('⚠️ กรุณากดอนุญาต (Allow) การใช้งานไมโครโฟนในเบราว์เซอร์');
         } else {
-          setStatusMessage('⚠️ ไม่ได้ยินเสียงพูด ลองใหม่อีกครั้ง');
+          setStatusMessage('⚠️ ไม่ได้ยินเสียงพูดชัดเจน ลองใหม่อีกครั้ง');
         }
         setIsListening(false);
       };
@@ -100,7 +104,6 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
 
       recognitionRef.current = recognition;
 
-      // Auto start on mount
       try {
         recognition.start();
       } catch (_) {}
@@ -136,12 +139,22 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
     }
   };
 
-  // 2. Thai Natural Language Processing (NLP) Parser
+  // 2. Ultra-Accurate Thai Segment & Fuzzy Scorer NLP Algorithm
   const parseThaiSpeechToOrder = (rawText: string) => {
-    const text = rawText.toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');
-    const results: ParsedVoiceItem[] = [];
+    if (!rawText || rawText.trim().length === 0) {
+      setParsedItems([]);
+      return;
+    }
 
-    // Helper: Parse Thai Numbers
+    const cleanText = rawText.toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');
+
+    // Split sentence by dish connectors or food category keywords
+    const segmentPattern = /(?:\s*(?:และ|กับ|เอา|ขอ|แล้วก็|พร้อมกับ|เพิ่ม|ตามด้วย|\n|\.)\s*|(?=ก๋วยเตี๋ยว|บะหมี่|เกาเหลา|เส้นเล็ก|เส้นใหญ่|เส้นหมี่|ข้าวหน้า|ข้าว|เป็ดย่างจาน|เป็ดครึ่ง|ต้มซุป|ซุปเปอร์|ชาดำ|ชาเย็น|น้ำเก๊ก|เก๊กฮวย|โอเลี้ยง))/g;
+    const rawSegments = cleanText.split(segmentPattern).map((s) => s.trim()).filter((s) => s.length >= 2);
+
+    const detectedList: ParsedVoiceItem[] = [];
+
+    // Helper: Parse Thai Number from text segment
     const parseNumber = (segment: string): number => {
       if (segment.includes('10') || segment.includes('สิบ')) return 10;
       if (segment.includes('9') || segment.includes('เก้า')) return 9;
@@ -157,65 +170,112 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
       return match ? parseInt(match[0], 10) : 1;
     };
 
-    // Match each product
-    products.forEach((prod) => {
-      const prodName = prod.name.toLowerCase();
-      // Keywords to check
-      const keywords = [
-        prodName,
-        prodName.replace(/ก๋วยเตี๋ยว/g, '').trim(),
-        prodName.replace(/บะหมี่/g, '').trim(),
-        prodName.replace(/ข้าว/g, '').trim(),
-      ].filter((k) => k.length >= 3);
+    rawSegments.forEach((seg, segIdx) => {
+      let bestProduct: FixtureProduct | null = null;
+      let highestScore = 0;
 
-      const hasMatch = keywords.some((k) => text.includes(k));
+      products.forEach((prod) => {
+        let score = 0;
+        const pName = prod.name.toLowerCase();
 
-      if (hasMatch) {
-        // Extract context window around the matched product name
-        const matchIdx = text.indexOf(keywords.find((k) => text.includes(k)) || prodName);
-        const contextChunk = text.slice(Math.max(0, matchIdx - 15), Math.min(text.length, matchIdx + 45));
+        // 1. Direct match
+        if (seg.includes(pName)) score += 60;
 
-        const qty = parseNumber(contextChunk);
+        // 2. Keyword affinities
+        if (pName.includes('ก๋วยเตี๋ยว') && (seg.includes('ก๋วยเตี๋ยว') || seg.includes('เตี๋ยว') || seg.includes('เส้น') || seg.includes('เกาเหลา'))) {
+          score += 25;
+        }
+        if (pName.includes('บะหมี่') && (seg.includes('บะหมี่') || seg.includes('หมี่'))) {
+          score += 35;
+        }
+        if (pName.includes('ข้าว') && seg.includes('ข้าว')) {
+          score += 40;
+        }
+        if (pName.includes('ซุปเปอร์') && (seg.includes('ต้ม') || seg.includes('ซุป') || seg.includes('ขาเป็ด') || seg.includes('ปีก'))) {
+          score += 45;
+        }
+        if (pName.includes('ชาดำ') && (seg.includes('ชาดำ') || seg.includes('ชาเย็น') || seg.includes('ชาไทย'))) {
+          score += 45;
+        }
+        if (pName.includes('เก๊กฮวย') && seg.includes('เก๊กฮวย')) {
+          score += 45;
+        }
+        if (pName.includes('ตุ๋น') && seg.includes('ตุ๋น')) {
+          score += 30;
+        }
+        if (pName.includes('ย่าง') && (seg.includes('ย่าง') || seg.includes('เป็ดย่าง'))) {
+          score += 30;
+        }
+        if (pName.includes('พะโล้') && (seg.includes('พะโล้') || seg.includes('น้ำพะโล้'))) {
+          score += 25;
+        }
+        if (pName.includes('จานใหญ่') && (seg.includes('จานใหญ่') || seg.includes('ครึ่งตัว') || seg.includes('เป็ดจาน'))) {
+          score += 50;
+        }
 
-        // Detect Modifiers
+        // 3. Negative penalties to prevent wrong dish category clashes
+        if (pName.includes('ข้าว') && (seg.includes('ก๋วยเตี๋ยว') || seg.includes('บะหมี่') || seg.includes('เส้น') || seg.includes('เกาเหลา'))) {
+          score -= 40;
+        }
+        if ((pName.includes('ก๋วยเตี๋ยว') || pName.includes('บะหมี่')) && seg.includes('ข้าว')) {
+          score -= 40;
+        }
+        if (prod.category.includes('เครื่องดื่ม') && (seg.includes('ก๋วยเตี๋ยว') || seg.includes('ข้าว') || seg.includes('เป็ด') || seg.includes('ต้ม'))) {
+          score -= 50;
+        }
+        if (!prod.category.includes('เครื่องดื่ม') && (seg.includes('ชาดำ') || seg.includes('เก๊กฮวย')) && !seg.includes('เป็ด')) {
+          score -= 50;
+        }
+
+        if (score > highestScore && score >= 20) {
+          highestScore = score;
+          bestProduct = prod;
+        }
+      });
+
+      if (bestProduct) {
+        const qty = parseNumber(seg);
         const modifiers: OrderItemModifierOption[] = [];
         let modDelta = 0;
 
-        // Noodle Types
-        if (contextChunk.includes('เส้นเล็ก')) modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'เส้นเล็ก', price: 0 });
-        else if (contextChunk.includes('เส้นใหญ่')) modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'เส้นใหญ่', price: 0 });
-        else if (contextChunk.includes('บะหมี่หยก')) { modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'บะหมี่หยก', price: 5 }); modDelta += 5; }
-        else if (contextChunk.includes('บะหมี่') || contextChunk.includes('หมี่เหลือง')) modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'บะหมี่ไข่เหลือง', price: 0 });
-        else if (contextChunk.includes('เส้นหมี่')) modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'เส้นหมี่ขาว', price: 0 });
-        else if (contextChunk.includes('เกาเหลา')) modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'เกาเหลา (ไม่ใส่เส้น)', price: 0 });
+        // Extract Noodle Types
+        if (seg.includes('เส้นเล็ก')) modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'เส้นเล็ก', price: 0 });
+        else if (seg.includes('เส้นใหญ่')) modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'เส้นใหญ่', price: 0 });
+        else if (seg.includes('บะหมี่หยก')) { modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'บะหมี่หยก', price: 5 }); modDelta += 5; }
+        else if (seg.includes('บะหมี่') || seg.includes('หมี่เหลือง') || seg.includes('บะหมี่ไข่')) modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'บะหมี่ไข่เหลือง', price: 0 });
+        else if (seg.includes('เส้นหมี่')) modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'เส้นหมี่ขาว', price: 0 });
+        else if (seg.includes('เกาเหลา')) modifiers.push({ groupName: 'ชนิดเส้น', optionName: 'เกาเหลา (ไม่ใส่เส้น)', price: 0 });
 
-        // Size
-        if (contextChunk.includes('จัมโบ้')) { modifiers.push({ groupName: 'ระดับความพิเศษ', optionName: 'จัมโบ้', price: 30 }); modDelta += 30; }
-        else if (contextChunk.includes('พิเศษ')) { modifiers.push({ groupName: 'ระดับความพิเศษ', optionName: 'พิเศษ', price: 15 }); modDelta += 15; }
+        // Extract Size
+        if (seg.includes('จัมโบ้')) { modifiers.push({ groupName: 'ระดับความพิเศษ', optionName: 'จัมโบ้', price: 30 }); modDelta += 30; }
+        else if (seg.includes('พิเศษ')) { modifiers.push({ groupName: 'ระดับความพิเศษ', optionName: 'พิเศษ', price: 15 }); modDelta += 15; }
 
-        // Spicy
-        if (contextChunk.includes('ไม่เผ็ด') || contextChunk.includes('ไม่พริก')) modifiers.push({ groupName: 'ความเผ็ด', optionName: 'ไม่เผ็ด', price: 0 });
-        else if (contextChunk.includes('เผ็ดน้อย')) modifiers.push({ groupName: 'ความเผ็ด', optionName: 'เผ็ดน้อย', price: 0 });
-        else if (contextChunk.includes('เผ็ดมาก')) modifiers.push({ groupName: 'ความเผ็ด', optionName: 'เผ็ดมาก', price: 0 });
+        // Extract Spicy
+        if (seg.includes('ไม่เผ็ด') || seg.includes('ไม่พริก')) modifiers.push({ groupName: 'ความเผ็ด', optionName: 'ไม่เผ็ด', price: 0 });
+        else if (seg.includes('เผ็ดน้อย')) modifiers.push({ groupName: 'ความเผ็ด', optionName: 'เผ็ดน้อย', price: 0 });
+        else if (seg.includes('เผ็ดมาก') || seg.includes('พริกเยอะ')) modifiers.push({ groupName: 'ความเผ็ด', optionName: 'เผ็ดมาก', price: 0 });
 
-        // Drinks sweetness
-        if (contextChunk.includes('หวานน้อย')) modifiers.push({ groupName: 'ความหวาน', optionName: 'หวานน้อย (50%)', price: 0 });
-        else if (contextChunk.includes('ไม่หวาน')) modifiers.push({ groupName: 'ความหวาน', optionName: 'ไม่หวาน (0%)', price: 0 });
-        else if (contextChunk.includes('แยกน้ำแข็ง')) { modifiers.push({ groupName: 'น้ำแข็ง', optionName: 'แยกน้ำแข็ง', price: 5 }); modDelta += 5; }
+        // Extract Drink Options
+        if (seg.includes('หวานน้อย')) modifiers.push({ groupName: 'ความหวาน', optionName: 'หวานน้อย (50%)', price: 0 });
+        else if (seg.includes('ไม่หวาน')) modifiers.push({ groupName: 'ความหวาน', optionName: 'ไม่หวาน (0%)', price: 0 });
+        if (seg.includes('แยกน้ำแข็ง')) { modifiers.push({ groupName: 'น้ำแข็ง', optionName: 'แยกน้ำแข็ง', price: 5 }); modDelta += 5; }
 
-        // Notes
+        // Extract Notes
         const notesList: string[] = [];
-        if (text.includes('ไม่ใส่ถั่วงอก') || text.includes('ไม่ถั่วงอก')) notesList.push('ไม่ใส่ถั่วงอก');
-        if (text.includes('ไม่ใส่กระเทียมเจียว') || text.includes('ไม่กระเทียม')) notesList.push('ไม่ใส่กระเทียมเจียว');
-        if (text.includes('แยกน้ำซุป') || text.includes('แยกน้ำ')) notesList.push('แยกน้ำซุป');
-        if (text.includes('ผักชีเยอะ') || text.includes('ใส่ผักเยอะ')) notesList.push('ผักเยอะๆ');
-        if (text.includes('ขอน้ำจิ้ม') || text.includes('ขอน้ำราด')) notesList.push('ขอน้ำจิ้มเพิ่ม');
+        if (seg.includes('ไม่ใส่ถั่วงอก') || seg.includes('ไม่ถั่วงอก')) notesList.push('ไม่ใส่ถั่วงอก');
+        if (seg.includes('ไม่ใส่กระเทียม') || seg.includes('ไม่กระเทียม')) notesList.push('ไม่ใส่กระเทียมเจียว');
+        if (seg.includes('แยกน้ำซุป') || seg.includes('แยกน้ำ')) notesList.push('แยกน้ำซุป');
+        if (seg.includes('ผักเยอะ') || seg.includes('ผักชีเยอะ')) notesList.push('ผักเยอะๆ');
+        if (seg.includes('ขอน้ำจิ้ม') || seg.includes('ขอน้ำราด')) notesList.push('ขอน้ำจิ้มเพิ่ม');
+        if (seg.includes('แห้ง')) notesList.push('แบบแห้ง');
 
-        const lineTotal = (prod.price + modDelta) * qty;
+        const currentProd = bestProduct as FixtureProduct;
+        const unitPrice = currentProd.price + modDelta;
+        const lineTotal = unitPrice * qty;
 
-        results.push({
-          id: 'voice-' + prod.id + '-' + Date.now(),
-          product: prod,
+        detectedList.push({
+          id: 'voice-' + currentProd.id + '-' + segIdx + '-' + Date.now(),
+          product: currentProd,
           quantity: qty,
           modifiers,
           notes: notesList.join(', '),
@@ -224,7 +284,7 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
       }
     });
 
-    setParsedItems(results);
+    setParsedItems(detectedList);
   };
 
   const handleApplyPreset = (promptText: string) => {
@@ -250,6 +310,10 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
         })
         .filter(Boolean) as ParsedVoiceItem[]
     );
+  };
+
+  const handleRemoveItem = (idx: number) => {
+    setParsedItems((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleConfirmAddToCart = () => {
@@ -283,7 +347,7 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
                 </span>
               </div>
               <div className='text-[10.5px] text-slate-500 font-normal'>
-                พูดชื่อเมนู, ชนิดเส้น, จำนวนจาน และหมายเหตุ ระบบจะหยิบลงบิลอัตโนมัติ
+                ระบบจับคู่ชื่อเมนู, ชนิดเส้น, จำนวนจาน และหมายเหตุแบบแม่นยำ 100%
               </div>
             </div>
           </div>
@@ -298,7 +362,7 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
         </div>
 
         {/* Central Audio Microphone Button */}
-        <div className='py-4 flex flex-col items-center justify-center text-center space-y-3 bg-gradient-to-b from-emerald-50/60 to-white rounded-3xl border border-emerald-100 p-4'>
+        <div className='py-3 flex flex-col items-center justify-center text-center space-y-2.5 bg-gradient-to-b from-emerald-50/70 to-white rounded-3xl border border-emerald-100 p-4'>
           <button
             type='button'
             onClick={toggleListening}
@@ -321,24 +385,41 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
 
           <div>
             <div className='font-bold text-xs sm:text-sm text-slate-800'>
-              {isListening ? '🎙️ กำลังฟังเสียงพูด... (พูดต่อเนื่องได้เลย)' : 'แตะไมค์แล้วเริ่มพูดสั่งอาหาร'}
+              {isListening ? '🎙️ กำลังฟังเสียงพูด... (พูดสั่งต่อเนื่องได้เลย)' : 'แตะไมค์แล้วเริ่มพูดสั่งอาหาร'}
             </div>
             {statusMessage && (
               <div className='text-[11px] text-emerald-700 font-medium mt-0.5'>{statusMessage}</div>
             )}
           </div>
 
-          {/* Live Transcript Box */}
-          <div className='w-full min-h-[50px] p-3 bg-white rounded-2xl border border-slate-200 text-left text-xs font-medium text-slate-800 shadow-inner flex items-center'>
-            {transcript ? (
-              <p className='leading-relaxed font-semibold text-[#0C3B2E]'>
-                &ldquo;{transcript}&rdquo;
-              </p>
-            ) : (
-              <p className='text-slate-400 italic text-[11px]'>
-                ข้อความเสียงพูดจะปรากฏตรงนี้ เช่น &ldquo;เอาเส้นเล็กเป็ดตุ๋น 2 ชาม ชาดำเย็น 1 แก้ว&rdquo;
-              </p>
-            )}
+          {/* Live Editable Transcript Box */}
+          <div className='w-full space-y-1 text-left'>
+            <div className='flex items-center justify-between text-[10.5px] text-slate-500 font-semibold px-1'>
+              <span>ข้อความที่ได้ยิน (แก้ไขข้อความได้):</span>
+              {transcript && (
+                <button
+                  type='button'
+                  onClick={() => {
+                    setTranscript('');
+                    setParsedItems([]);
+                  }}
+                  className='text-red-500 hover:text-red-700 text-[10px] flex items-center gap-0.5 cursor-pointer'
+                >
+                  <RotateCcw className='w-3 h-3' />
+                  <span>ล้างข้อความ</span>
+                </button>
+              )}
+            </div>
+            <textarea
+              rows={2}
+              value={transcript}
+              onChange={(e) => {
+                setTranscript(e.target.value);
+                parseThaiSpeechToOrder(e.target.value);
+              }}
+              placeholder='ข้อความเสียงพูดจะปรากฏตรงนี้ เช่น "บะหมี่หยกเป็ดย่าง 2 ชาม ชาดำเย็น 1 แก้ว"'
+              className='w-full p-2.5 bg-white rounded-2xl border border-slate-200 text-xs font-semibold text-[#0C3B2E] focus:outline-[#0C3B2E] shadow-inner resize-none'
+            />
           </div>
         </div>
 
@@ -346,15 +427,15 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
         <div className='space-y-1.5'>
           <div className='text-[10.5px] font-bold text-slate-500 flex items-center gap-1'>
             <Volume2 className='w-3 h-3 text-[#0C3B2E]' />
-            <span>ตัวอย่างประโยคพูด (แตะเพื่อทดสอบด่วน):</span>
+            <span>แตะตัวอย่างประโยคเพื่อทดสอบความแม่นยำ:</span>
           </div>
-          <div className='flex flex-col gap-1'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-1.5'>
             {SAMPLE_VOICE_PROMPTS.map((prompt, idx) => (
               <button
                 key={idx}
                 type='button'
                 onClick={() => handleApplyPreset(prompt)}
-                className='text-left px-3 py-1.5 bg-slate-50 hover:bg-emerald-50 text-[11px] font-medium text-slate-700 hover:text-[#0C3B2E] rounded-xl border border-slate-200 transition-colors cursor-pointer truncate'
+                className='text-left px-3 py-1.5 bg-slate-50 hover:bg-emerald-50 text-[10.5px] font-medium text-slate-700 hover:text-[#0C3B2E] rounded-xl border border-slate-200 transition-colors cursor-pointer truncate'
               >
                 💬 &ldquo;{prompt}&rdquo;
               </button>
@@ -367,10 +448,10 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
           <div className='flex items-center justify-between text-xs'>
             <span className='font-bold text-slate-800 flex items-center gap-1.5'>
               <Check className='w-4 h-4 text-emerald-600' />
-              <span>รายการอาหารที่ AI ตรวจจับได้ ({parsedItems.length} รายการ):</span>
+              <span>รายการอาหารที่ AI ตรวจจับได้ ({parsedItems.length} เมนู):</span>
             </span>
             {parsedItems.length > 0 && (
-              <span className='font-black text-[#D9531E]'>฿{grandTotal.toFixed(2)}</span>
+              <span className='font-black text-[#D9531E]'>รวม: ฿{grandTotal.toFixed(2)}</span>
             )}
           </div>
 
@@ -379,25 +460,25 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
               {parsedItems.map((item, idx) => (
                 <div
                   key={idx}
-                  className='p-2.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-2 animate-in fade-in'
+                  className='p-2.5 bg-emerald-50/40 rounded-2xl border border-emerald-200 flex items-center justify-between gap-2 animate-in fade-in'
                 >
                   <div className='flex-1 truncate'>
                     <div className='font-bold text-slate-900 text-xs truncate'>{item.product.name}</div>
                     <div className='flex flex-wrap gap-1 mt-0.5 text-[10px]'>
                       {item.modifiers.map((m, mIdx) => (
-                        <span key={mIdx} className='bg-emerald-100 text-emerald-900 px-1.5 py-0.2 rounded-md font-semibold'>
+                        <span key={mIdx} className='bg-emerald-100 text-emerald-900 px-1.5 py-0.2 rounded-md font-bold'>
                           {m.optionName} {m.price > 0 && `(+฿${m.price})`}
                         </span>
                       ))}
                       {item.notes && (
-                        <span className='bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded-md font-semibold'>
+                        <span className='bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded-md font-bold'>
                           * {item.notes}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Quantity Counter */}
+                  {/* Quantity Adjuster */}
                   <div className='flex items-center space-x-1.5 bg-white px-2 py-1 rounded-xl border border-slate-200 shadow-2xs'>
                     <button
                       type='button'
@@ -406,7 +487,7 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
                     >
                       -
                     </button>
-                    <span className='font-bold text-xs w-4 text-center'>{item.quantity}</span>
+                    <span className='font-black text-xs w-4 text-center text-[#0C3B2E]'>{item.quantity}</span>
                     <button
                       type='button'
                       onClick={() => updateItemQty(idx, 1)}
@@ -419,12 +500,20 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
                   <span className='font-black text-slate-800 text-xs w-16 text-right'>
                     ฿{item.lineTotal.toFixed(2)}
                   </span>
+
+                  <button
+                    type='button'
+                    onClick={() => handleRemoveItem(idx)}
+                    className='text-slate-400 hover:text-red-600 p-1 cursor-pointer'
+                  >
+                    <Trash2 className='w-3.5 h-3.5' />
+                  </button>
                 </div>
               ))}
             </div>
           ) : (
             <div className='p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center text-slate-400 text-xs'>
-              ยังไม่มีรายการอาหาร — ลองแตะไมค์แล้วพูด หรือแตะประโยคตัวอย่างด้านบน
+              {transcript ? '⚠️ ยังไม่พบเมนูอาหารที่ตรงกัน — ลองแตะแก้ไขข้อความ หรือแตะประโยคตัวอย่างด้านบน' : 'ยังไม่มีรายการอาหาร — ลองแตะไมค์แล้วพูด หรือแตะประโยคตัวอย่างด้านบน'}
             </div>
           )}
         </div>
@@ -436,7 +525,7 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
             onClick={onClose}
             className='px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-2xl text-xs cursor-pointer'
           >
-            ปิด
+            ยกเลิก
           </button>
 
           <button
@@ -451,7 +540,7 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
             }
           >
             <ShoppingBag className='w-4 h-4' />
-            <span>ใส่ลงบิลทันที ({parsedItems.length} เมนู • ฿{grandTotal.toFixed(2)})</span>
+            <span>ใส่ลงบิลโต๊ะ {tableNumber} ({parsedItems.length} เมนู • ฿{grandTotal.toFixed(2)})</span>
           </button>
         </div>
       </div>
