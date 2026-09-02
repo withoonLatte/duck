@@ -53,9 +53,15 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
+  const isExplicitlyStoppedRef = useRef(false);
+  const isMountedRef = useRef(true);
+  const restartTimerRef = useRef<any>(null);
 
-  // 1. Setup Web Speech Recognition
+  // 1. Setup Continuous Auto-KeepAlive Web Speech Recognition
   useEffect(() => {
+    isMountedRef.current = true;
+    isExplicitlyStoppedRef.current = false;
+
     const SpeechRecognition =
       typeof window !== 'undefined'
         ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -66,56 +72,81 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
       return;
     }
 
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'th-TH';
-      recognition.continuous = true;
-      recognition.interimResults = true;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-        setStatusMessage('🎙️ กำลังฟังเสียงภาษาไทย... (พูดสั่งอาหารได้เลย)');
-      };
-
-      recognition.onresult = (event: any) => {
-        let currentTranscript = '';
-        for (let i = 0; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript;
-        }
-        if (currentTranscript) {
-          setTranscript(currentTranscript);
-          parseThaiSpeechToOrder(currentTranscript);
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        console.warn('SpeechRecognition error:', event.error);
-        if (event.error === 'not-allowed') {
-          setStatusMessage('⚠️ กรุณากดอนุญาต (Allow) การใช้งานไมโครโฟนในเบราว์เซอร์');
-        } else {
-          setStatusMessage('⚠️ ไม่ได้ยินเสียงพูดชัดเจน ลองใหม่อีกครั้ง');
-        }
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current = recognition;
-
+    const initRecognition = () => {
       try {
-        recognition.start();
-      } catch (_) {}
-    } catch (err) {
-      console.warn('SpeechRecognition init error:', err);
-      setIsSupported(false);
-    }
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'th-TH';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+          if (isMountedRef.current) {
+            setIsListening(true);
+            setStatusMessage('🎙️ กำลังเปิดไมค์ฟังต่อเนื่อง... (พูดสั่งอาหารได้เรื่อยๆ)');
+          }
+        };
+
+        recognition.onresult = (event: any) => {
+          let currentTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+          }
+          if (currentTranscript && isMountedRef.current) {
+            setTranscript(currentTranscript);
+            parseThaiSpeechToOrder(currentTranscript);
+          }
+        };
+
+        recognition.onerror = (event: any) => {
+          console.warn('SpeechRecognition event error:', event.error);
+          if (event.error === 'not-allowed') {
+            isExplicitlyStoppedRef.current = true;
+            if (isMountedRef.current) {
+              setIsListening(false);
+              setStatusMessage('⚠️ กรุณากดอนุญาต (Allow) การใช้งานไมโครโฟนในเบราว์เซอร์');
+            }
+          }
+        };
+
+        recognition.onend = () => {
+          // AUTO-KEEPALIVE: Keep listening unless user explicitly pressed Stop
+          if (!isExplicitlyStoppedRef.current && isMountedRef.current) {
+            clearTimeout(restartTimerRef.current);
+            restartTimerRef.current = setTimeout(() => {
+              if (!isExplicitlyStoppedRef.current && isMountedRef.current) {
+                try {
+                  recognition.start();
+                } catch (_) {}
+              }
+            }, 100);
+          } else if (isMountedRef.current) {
+            setIsListening(false);
+            setStatusMessage('⏸️ ไมค์หยุดทำงาน — แตะปุ่มไมค์เพื่อเริ่มฟังใหม่');
+          }
+        };
+
+        recognitionRef.current = recognition;
+
+        try {
+          recognition.start();
+          setIsListening(true);
+        } catch (_) {}
+      } catch (err) {
+        console.warn('SpeechRecognition init error:', err);
+        setIsSupported(false);
+      }
+    };
+
+    initRecognition();
 
     return () => {
+      isMountedRef.current = false;
+      isExplicitlyStoppedRef.current = true;
+      clearTimeout(restartTimerRef.current);
       if (recognitionRef.current) {
         try {
-          recognitionRef.current.stop();
+          recognitionRef.current.abort();
         } catch (_) {}
       }
     };
@@ -126,16 +157,32 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
       alert('เบราว์เซอร์ของคุณยังไม่รองรับ Web Speech API กรุณาใช้ Google Chrome หรือ Safari ครับ');
       return;
     }
+
     if (isListening) {
+      // User explicitly stopped
+      isExplicitlyStoppedRef.current = true;
+      clearTimeout(restartTimerRef.current);
       try {
         recognitionRef.current?.stop();
       } catch (_) {}
       setIsListening(false);
+      setStatusMessage('⏸️ ไมค์หยุดทำงาน — แตะปุ่มไมค์เพื่อเริ่มฟังใหม่');
     } else {
+      // User starts listening
+      isExplicitlyStoppedRef.current = false;
       try {
         recognitionRef.current?.start();
-      } catch (_) {}
-      setIsListening(true);
+        setIsListening(true);
+        setStatusMessage('🎙️ กำลังเปิดไมค์ฟังต่อเนื่อง... (พูดสั่งอาหารได้เรื่อยๆ)');
+      } catch (_) {
+        try {
+          recognitionRef.current?.stop();
+          setTimeout(() => {
+            recognitionRef.current?.start();
+            setIsListening(true);
+          }, 150);
+        } catch (_) {}
+      }
     }
   };
 
@@ -384,11 +431,20 @@ export function AIVoiceOrderModal({ tableNumber, onClose, onAddItemsToCart }: AI
           </button>
 
           <div>
-            <div className='font-bold text-xs sm:text-sm text-slate-800'>
-              {isListening ? '🎙️ กำลังฟังเสียงพูด... (พูดสั่งต่อเนื่องได้เลย)' : 'แตะไมค์แล้วเริ่มพูดสั่งอาหาร'}
+            <div className='font-bold text-xs sm:text-sm text-slate-800 flex items-center justify-center gap-1.5'>
+              {isListening ? (
+                <>
+                  <span className='w-2.5 h-2.5 rounded-full bg-red-500 animate-ping' />
+                  <span className='text-red-600 font-black'>กำลังเปิดไมค์ฟังต่อเนื่อง (แตะปุ่มแดงเมื่อพูดเสร็จ)</span>
+                </>
+              ) : (
+                <span className='text-slate-700 font-bold'>แตะปุ่มไมค์สีเขียวเพื่อเริ่มพูดสั่งอาหาร</span>
+              )}
             </div>
             {statusMessage && (
-              <div className='text-[11px] text-emerald-700 font-medium mt-0.5'>{statusMessage}</div>
+              <div className='text-[11px] text-emerald-700 font-medium mt-1 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-block'>
+                {statusMessage}
+              </div>
             )}
           </div>
 
