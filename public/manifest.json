@@ -1,0 +1,19 @@
+{
+  "name": "Duck Noodle Restaurant OS",
+  "short_name": "Duck POS",
+  "description": "ระบบปฏิบัติการร้านก๋วยเตี๋ยวเป็ดนายเอก POS & KDS",
+  "start_url": "/pos",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone", "window-controls-overlay"],
+  "background_color": "#0C3B2E",
+  "theme_color": "#0C3B2E",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/images/banner-bg.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
