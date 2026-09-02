@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { useRestaurant } from '@/lib/store/restaurant-store';
 import { FIXTURE_CATEGORIES, FIXTURE_PRODUCTS, FixtureProduct } from '@/lib/store/fixtures';
 import { ModifierModal } from '@/components/order/modifier-modal';
-import { AIVoiceOrderModal } from '@/components/order/ai-voice-order-modal';
 import { 
   QrCode, 
   ShoppingBag, 
@@ -82,7 +81,6 @@ function CustomerQROrderContent() {
   
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCartDrawer, setShowCartDrawer] = useState(false);
-  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [submittedOrderId, setSubmittedOrderId] = useState<string | null>(null);
 
   const activeSubmittedOrder = orders.find((o) => o.id === submittedOrderId);

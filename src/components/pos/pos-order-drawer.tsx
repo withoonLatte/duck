@@ -5,7 +5,6 @@ import { useRestaurant, StoreOrderItem } from '@/lib/store/restaurant-store';
 import { FIXTURE_PRODUCTS, FixtureProduct } from '@/lib/store/fixtures';
 import { ModifierModal } from '@/components/order/modifier-modal';
 import { VoidItemModal } from './void-item-modal';
-import { AIVoiceOrderModal } from '@/components/order/ai-voice-order-modal';
 import { 
   X, 
   UtensilsCrossed, 
@@ -56,7 +55,6 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
   const [activeModalProduct, setActiveModalProduct] = useState<FixtureProduct | null>(null);
   const [showMobileCartSheet, setShowMobileCartSheet] = useState(false);
   const [voidTargetItem, setVoidTargetItem] = useState<StoreOrderItem | null>(null);
-  const [showVoiceOrderModal, setShowVoiceOrderModal] = useState(false);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   const toggleVoiceSearch = () => {
@@ -186,52 +184,25 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
           <div className='flex-1 flex flex-col overflow-hidden border-r border-slate-200 bg-[#F4F6F5]'>
             {/* PINNED / FIXED TOP: Search & Compact Icon Category Bar */}
             <div className='p-3 sm:p-4 bg-[#F4F6F5] border-b border-slate-200/80 space-y-2.5 shrink-0 shadow-xs z-10'>
-              {/* Search Box with AI Voice Ordering Button */}
-              <div className='flex items-center gap-2'>
-                <div className='relative flex-1 flex items-center'>
+              {/* Clean Fast Search Box */}
+              <div className='relative flex items-center'>
                 <Search className='w-4 h-4 absolute left-3.5 text-slate-400' />
                 <input
                   type='text'
-                  placeholder='ค้นหาเมนู หรือกดปุ่มไมค์เพื่อพูดชื่อเมนู...'
+                  placeholder='พิมพ์ค้นหาชื่อเมนูอาหาร หรือรหัส SKU...'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={
-                    'w-full pl-10 pr-16 py-2.5 bg-white border rounded-2xl text-xs font-medium focus:outline-[#0C3B2E] shadow-xs transition-all ' +
-                    (isVoiceSearching ? 'border-red-400 ring-2 ring-red-200 bg-red-50/50 text-red-950 font-bold' : 'border-slate-200')
-                  }
+                  className='w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-[#0C3B2E] shadow-xs transition-all'
                 />
-                <button
-                  type='button'
-                  onClick={toggleVoiceSearch}
-                  title='ค้นหาด้วยเสียงพูด'
-                  className={
-                    'absolute right-1.5 px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1 transition-all cursor-pointer ' +
-                    (isVoiceSearching ? 'bg-red-500 text-white animate-pulse' : 'bg-[#0C3B2E] text-white hover:bg-[#072E20]')
-                  }
-                >
-                  {isVoiceSearching ? (
-                    <>
-                      <MicOff className='w-3 h-3 animate-spin' />
-                      <span className='text-[9px]'>ฟัง...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Mic className='w-3 h-3 text-[#84CC16]' />
-                      <span className='text-[9px]'>พูด</span>
-                    </>
-                  )}
-                </button>
-                </div>
-
-                <button
-                  type='button'
-                  onClick={() => setShowVoiceOrderModal(true)}
-                  className='px-3.5 py-2.5 bg-gradient-to-r from-[#0C3B2E] to-[#1a5342] hover:from-[#072E20] hover:to-[#0C3B2E] text-white font-bold rounded-2xl text-xs flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer shrink-0 border border-emerald-400/40'
-                >
-                  <Sparkles className='w-4 h-4 text-[#84CC16] animate-pulse' />
-                  <span className='hidden sm:inline'>สั่งด้วยเสียง AI</span>
-                  <span className='sm:hidden'>AI เสียง</span>
-                </button>
+                {searchQuery && (
+                  <button
+                    type='button'
+                    onClick={() => setSearchQuery('')}
+                    className='absolute right-3 text-slate-400 hover:text-slate-600 font-bold text-xs cursor-pointer'
+                  >
+                    <X className='w-3.5 h-3.5' />
+                  </button>
+                )}
               </div>
 
               {/* Category Filter Pills with Emojis & Compact Labels */}
@@ -494,14 +465,6 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
                 </div>
                 <div className='flex items-center gap-2'>
                   <button
-                    type='button'
-                    onClick={() => setShowVoiceOrderModal(true)}
-                    className='px-2.5 py-1 bg-white/20 text-white rounded-full text-xs font-bold flex items-center gap-1 cursor-pointer'
-                  >
-                    <Sparkles className='w-3 h-3 text-[#84CC16]' />
-                    <span>AI เสียง</span>
-                  </button>
-                  <button
                     onClick={() => setShowMobileCartSheet(false)}
                     className='px-3 py-1 bg-white/15 text-white rounded-full text-xs font-bold cursor-pointer'
                   >
@@ -623,19 +586,7 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
           />
         )}
 
-        {/* AI VOICE ORDER ASSISTANT MODAL */}
-        {showVoiceOrderModal && (
-          <AIVoiceOrderModal
-            tableNumber={table.number}
-            onClose={() => setShowVoiceOrderModal(false)}
-            onAddItemsToCart={(items) => {
-              items.forEach((item) => {
-                addOrderItem(table.id, item.product, item.quantity, item.modifiers, item.notes);
-              });
-              setShowVoiceOrderModal(false);
-            }}
-          />
-        )}
+
       </div>
     </div>
   );
