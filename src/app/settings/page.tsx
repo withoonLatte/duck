@@ -33,7 +33,9 @@ import {
   Edit3,
   Plus,
   Lock,
-  X
+  X,
+  Camera,
+  Upload
 } from 'lucide-react';
 import { StaffMember, RoleType } from '@/lib/store/restaurant-store';
 import { RevenueAnalyticsDashboard } from '@/components/dashboard/revenue-analytics-dashboard';
@@ -391,27 +393,64 @@ export default function SettingsPage() {
       {/* TAB 2: Restaurant Logo */}
       {activeTab === 'LOGO' && (
         <div className='bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6'>
-          <h3 className='font-black text-slate-900 text-base flex items-center gap-2 border-b border-slate-100 pb-3'>
-            <ImageIcon className='w-5 h-5 text-[#0C3B2E]' />
-            <span>โลโก้ประจำร้าน (Restaurant Brand Logo)</span>
-          </h3>
+          <div className='flex items-center justify-between border-b border-slate-100 pb-3'>
+            <h3 className='font-black text-slate-900 text-base flex items-center gap-2'>
+              <ImageIcon className='w-5 h-5 text-[#0C3B2E]' />
+              <span>โลโก้ประจำร้าน (Restaurant Brand Logo)</span>
+            </h3>
+            {form.logoUrl && (
+              <button
+                type='button'
+                onClick={() => {
+                  setForm({ ...form, logoUrl: '' });
+                }}
+                className='text-xs text-red-600 hover:text-red-700 font-bold flex items-center gap-1 cursor-pointer'
+              >
+                <Trash2 className='w-3.5 h-3.5' />
+                <span>ลบโลโก้</span>
+              </button>
+            )}
+          </div>
 
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6 items-center'>
             <div className='space-y-4 text-xs'>
-              <div className='space-y-1.5'>
-                <label className='font-bold text-slate-700 block'>URL รูปภาพโลโก้ร้าน:</label>
-                <input
-                  type='text'
-                  value={form.logoUrl}
-                  onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
-                  placeholder='https://images.unsplash.com/...'
-                  className='w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl font-mono focus:bg-white focus:outline-[#0C3B2E]'
-                />
+              {/* Photo Camera & Device File Picker */}
+              <div>
+                <label className='font-bold text-slate-700 block mb-1.5'>
+                  อัปโหลดรูปภาพโลโก้ร้าน (เลือกจากเครื่อง หรือเปิดกล้องถ่าย):
+                </label>
+                
+                <label className='flex flex-col items-center justify-center border-2 border-dashed border-emerald-300 hover:border-[#0C3B2E] bg-emerald-50/40 hover:bg-emerald-50/80 rounded-3xl p-6 cursor-pointer transition-all active:scale-[0.99]'>
+                  <div className='w-12 h-12 rounded-2xl bg-emerald-100 text-[#0C3B2E] flex items-center justify-center mb-2 shadow-sm'>
+                    <Camera className='w-6 h-6' />
+                  </div>
+                  <span className='font-bold text-[#0C3B2E] text-xs sm:text-sm'>
+                    📸 แตะเพื่อเลือกรูปโลโก้จากเครื่อง หรือเปิดกล้องถ่าย
+                  </span>
+                  <span className='text-[10.5px] text-slate-500 mt-1 text-center'>
+                    รองรับไฟล์รูปภาพ PNG, JPG, WebP จากมือถือ, iPad และคอมพิวเตอร์
+                  </span>
+                  <input
+                    type='file'
+                    accept='image/*'
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setForm({ ...form, logoUrl: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className='hidden'
+                  />
+                </label>
               </div>
 
               {/* Preset Logos */}
-              <div className='space-y-2'>
-                <span className='font-bold text-slate-600 block'>หรือเลือกโลโก้แนะนำ:</span>
+              <div className='space-y-2 pt-2 border-t border-slate-100'>
+                <span className='font-bold text-slate-600 block'>หรือเลือกโลโก้สำเร็จรูปแนะนำ:</span>
                 <div className='grid grid-cols-3 gap-2'>
                   {[
                     { label: 'ก๋วยเตี๋ยวเป็ดคลาสสิก', url: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=150&auto=format&fit=crop&q=80' },
@@ -420,8 +459,9 @@ export default function SettingsPage() {
                   ].map((preset, idx) => (
                     <button
                       key={idx}
+                      type='button'
                       onClick={() => setForm({ ...form, logoUrl: preset.url })}
-                      className='p-2 rounded-2xl border border-slate-200 bg-slate-50 hover:border-[#0C3B2E] text-[10px] font-bold text-slate-700 flex flex-col items-center gap-1.5 cursor-pointer'
+                      className='p-2 rounded-2xl border border-slate-200 bg-slate-50 hover:border-[#0C3B2E] text-[10px] font-bold text-slate-700 flex flex-col items-center gap-1.5 cursor-pointer transition-colors'
                     >
                       <img src={preset.url} alt={preset.label} className='w-12 h-12 rounded-xl object-cover' />
                       <span className='truncate w-full text-center'>{preset.label}</span>
@@ -429,19 +469,35 @@ export default function SettingsPage() {
                   ))}
                 </div>
               </div>
+
+              <button
+                type='button'
+                onClick={handleSave}
+                className='w-full py-3 bg-[#84CC16] hover:bg-[#65A30D] text-[#072E20] font-black rounded-2xl text-xs flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer'
+              >
+                <Save className='w-4 h-4' />
+                <span>บันทึกโลโก้ร้าน (Save Logo)</span>
+              </button>
             </div>
 
             {/* Logo Live Preview */}
-            <div className='flex flex-col items-center justify-center p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-3'>
-              <div className='w-28 h-28 rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-white flex items-center justify-center'>
+            <div className='flex flex-col items-center justify-center p-8 bg-slate-50 rounded-3xl border border-slate-200 space-y-3.5'>
+              <div className='w-32 h-32 rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-white flex items-center justify-center'>
                 {form.logoUrl ? (
                   <img src={form.logoUrl} alt='Logo Preview' className='w-full h-full object-cover' />
                 ) : (
-                  <Store className='w-12 h-12 text-slate-300' />
+                  <Store className='w-14 h-14 text-slate-300' />
                 )}
               </div>
-              <span className='font-black text-slate-900 text-sm'>{form.name}</span>
-              <span className='text-xs text-slate-500 font-medium'>ตัวอย่างแสดงบนใบเสร็จและหน้าจอ QR สั่งอาหาร</span>
+              <div className='text-center space-y-0.5'>
+                <span className='font-black text-slate-900 text-sm block'>{form.name}</span>
+                <span className='text-[11px] text-slate-500 font-medium block'>
+                  {form.logoUrl ? '✓ มีโลโก้ประจำร้านแล้ว' : 'ยังไม่ได้ตั้งค่าโลโก้ (ใช้ไอคอนระบบ)'}
+                </span>
+                <span className='text-[10px] text-slate-400 font-normal block pt-1'>
+                  โลโก้จะปรากฏบนแถบด้านบน, ใบเสร็จ 80mm และหน้า QR สั่งอาหารของลูกค้า
+                </span>
+              </div>
             </div>
           </div>
         </div>
