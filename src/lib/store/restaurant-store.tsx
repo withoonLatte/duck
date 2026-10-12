@@ -1336,7 +1336,14 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     items: Array<{ product: FixtureProduct; quantity: number; modifiers: OrderItemModifierOption[]; notes?: string }>,
     customerName?: string
   ): string => {
-    const table = tables.find((t) => t.number.toLowerCase() === tableNumber.toLowerCase() || t.id === tableNumber) || tables[0];
+    const table = tables.find((t) => t.number.toLowerCase() === tableNumber.toLowerCase() || t.id === tableNumber);
+    
+    // SECURITY GUARD: Reject any QR order if the table is not opened by staff!
+    if (!table || (table.status !== 'OCCUPIED' && table.status !== 'BILL_REQUESTED')) {
+      alert('❌ ไม่สามารถสั่งอาหารได้: โต๊ะนี้ยังไม่ได้เปิดให้บริการ กรุณาแจ้งพนักงานเพื่อเปิดโต๊ะก่อนครับ');
+      return '';
+    }
+
     const newOrderId = 'ord-qr-' + Date.now();
     const orderNumber = 'QR-' + Math.floor(1000 + Math.random() * 9000);
 

@@ -35,6 +35,8 @@ function CustomerQROrderContent() {
 
   const { tables, orders, kdsTickets, submitQROrder } = useRestaurant();
   const [selectedTable, setSelectedTable] = useState(tableParam);
+  const currentTableObj = tables.find((t) => t.number.toLowerCase() === selectedTable.toLowerCase() || t.id === selectedTable);
+  const isTableActive = currentTableObj ? (currentTableObj.status === 'OCCUPIED' || currentTableObj.status === 'BILL_REQUESTED') : false;
   const [customerName, setCustomerName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
