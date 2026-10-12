@@ -1,7 +1,7 @@
 {
-  "name": "Duck Noodle Restaurant OS",
-  "short_name": "Duck POS",
-  "description": "ระบบปฏิบัติการร้านก๋วยเตี๋ยวเป็ดนายเอก POS & KDS",
+  "name": "เตี๋ยวเป็ด — Restaurant OS",
+  "short_name": "เตี๋ยวเป็ด POS",
+  "description": "ระบบปฏิบัติการร้านก๋วยเตี๋ยวเป็ด POS, KDS & QR Ordering",
   "start_url": "/pos",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone", "window-controls-overlay"],
@@ -10,10 +10,22 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/images/banner-bg.png",
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

@@ -5,13 +5,25 @@ import { AppHeader } from '@/components/layout/header';
 import { AppAuthGuard } from '@/components/auth/app-auth-guard';
 
 export const metadata: Metadata = {
-  title: 'Duck Noodle Restaurant OS — ระบบปฏิบัติการร้านก๋วยเตี๋ยวเป็ด',
+  title: 'เตี๋ยวเป็ด — Restaurant OS',
   description: 'Enterprise Multi-Branch Operating System for Duck Noodle & Food Establishments',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon.png', type: 'image/png' },
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/favicon.png',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Duck POS',
+    title: 'เตี๋ยวเป็ด POS',
   },
 };
 

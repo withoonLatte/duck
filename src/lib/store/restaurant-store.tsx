@@ -254,14 +254,14 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       }
     }
     return {
-      name: 'ร้านก๋วยเตี๋ยวเป็ดนายเอก (Duck Noodle OS)',
+      name: 'เตี๋ยวเป็ด (Duck Noodle OS)',
       branchName: 'สาขา 1 บรรทัดทอง',
       taxId: '0105562001234',
       phone: '081-234-5678',
       address: '123 ถนนบรรทัดทอง แขวงวังใหม่ เขตปทุมวัน กรุงเทพมหานคร 10330',
-      receiptHeader: 'ขอบพระคุณที่อุดหนุน ก๋วยเตี๋ยวเป็ดนายเอก',
+      receiptHeader: 'ขอบพระคุณที่อุดหนุน เตี๋ยวเป็ด (ESTABLISHED IN 1990)',
       receiptFooter: 'อาหารอร่อย สด สะอาด บริการด้วยใจ',
-      logoUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=150&auto=format&fit=crop&q=80',
+      logoUrl: '/logo.png',
       promptPayId: '0812345678',
       promptPayQrUrl: '',
       wifiSsid: 'DuckNoodle_5G',
