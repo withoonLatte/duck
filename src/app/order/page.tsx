@@ -91,7 +91,13 @@ function CustomerQROrderContent() {
 
   const filteredProducts = FIXTURE_PRODUCTS.filter((p) => {
     const matchCat = selectedCategory === 'ALL' || p.categoryId === selectedCategory;
-    const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.trim().toLowerCase();
+    const matchSearch =
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q) ||
+      (p.menuCode && p.menuCode.toLowerCase().includes(q)) ||
+      (p.sku && p.sku.toLowerCase().includes(q));
     return matchCat && matchSearch;
   });
 
@@ -381,8 +387,13 @@ function CustomerQROrderContent() {
 
                 <div className='flex-1 min-w-0 flex flex-col justify-between h-24 py-0.5'>
                   <div>
-                    <h4 className='font-semibold text-slate-800 text-xs truncate leading-snug'>
-                      {product.name}
+                    <h4 className='font-bold text-slate-800 text-xs truncate leading-snug flex items-center gap-1.5'>
+                      {product.menuCode && (
+                        <span className='px-1.5 py-0.5 rounded-md bg-[#0C3B2E] text-[#84CC16] font-mono font-black text-[10px] tracking-wide shrink-0 shadow-2xs'>
+                          {product.menuCode}
+                        </span>
+                      )}
+                      <span className='truncate'>{product.name}</span>
                     </h4>
                     <p className='text-[11px] text-slate-500 line-clamp-2 leading-relaxed mt-0.5'>
                       {product.description}

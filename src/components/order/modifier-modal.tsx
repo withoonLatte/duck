@@ -152,7 +152,14 @@ export function ModifierModal({ product, onClose, onAddToCart }: ModifierModalPr
 
           {/* Dish Title & Description */}
           <div>
-            <h2 className='text-lg sm:text-2xl font-black text-slate-900 leading-snug'>{product.name}</h2>
+            <h2 className='text-lg sm:text-2xl font-black text-slate-900 leading-snug flex items-center gap-2'>
+              {product.menuCode && (
+                <span className='px-2.5 py-1 rounded-xl bg-[#0C3B2E] text-[#84CC16] font-mono font-black text-sm sm:text-base shrink-0 shadow-xs'>
+                  {product.menuCode}
+                </span>
+              )}
+              <span>{product.name}</span>
+            </h2>
             {product.description && (
               <p className='text-[11px] sm:text-xs text-slate-500 mt-1 leading-relaxed'>{product.description}</p>
             )}

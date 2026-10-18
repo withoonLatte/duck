@@ -96,6 +96,7 @@ export default function InventoryAndMenuPage() {
     setEditingProduct(null);
     setProductForm({
       name: '',
+      menuCode: '',
       category: 'ก๋วยเตี๋ยว & บะหมี่เป็ด',
       categoryId: 'cat-01',
       description: '',
@@ -112,6 +113,7 @@ export default function InventoryAndMenuPage() {
     setEditingProduct(prod);
     setProductForm({
       name: prod.name,
+      menuCode: prod.menuCode || '',
       category: prod.category,
       categoryId: prod.categoryId,
       description: prod.description,
@@ -381,7 +383,14 @@ export default function InventoryAndMenuPage() {
                   {/* Body Content */}
                   <div className='p-4 space-y-2 flex-1 flex flex-col justify-between'>
                     <div>
-                      <h4 className='font-semibold text-slate-900 text-sm sm:text-base leading-snug'>{prod.name}</h4>
+                      <h4 className='font-bold text-slate-900 text-sm sm:text-base leading-snug flex items-center gap-1.5'>
+                        {prod.menuCode && (
+                          <span className='px-2 py-0.5 rounded-md bg-[#0C3B2E] text-[#84CC16] font-mono font-black text-xs shrink-0 shadow-2xs'>
+                            {prod.menuCode}
+                          </span>
+                        )}
+                        <span className='truncate'>{prod.name}</span>
+                      </h4>
                       <p className='text-[11px] text-slate-500 line-clamp-2 mt-1 font-normal'>{prod.description}</p>
                     </div>
 
@@ -691,16 +700,28 @@ export default function InventoryAndMenuPage() {
             </div>
 
             <form onSubmit={handleSaveProduct} className='space-y-3.5 text-xs'>
-              <div>
-                <label className='block font-semibold text-slate-700 mb-1'>ชื่อเมนูอาหาร *</label>
-                <input
-                  type='text'
-                  required
-                  placeholder='เช่น ก๋วยเตี๋ยวเป็ดตุ๋นยาจีน'
-                  value={productForm.name}
-                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                  className='w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium focus:outline-[#0C3B2E]'
-                />
+              <div className='grid grid-cols-4 gap-3'>
+                <div>
+                  <label className='block font-semibold text-slate-700 mb-1'>รหัสเมนู (Code)</label>
+                  <input
+                    type='text'
+                    placeholder='เช่น N01'
+                    value={productForm.menuCode || ''}
+                    onChange={(e) => setProductForm({ ...productForm, menuCode: e.target.value.toUpperCase() })}
+                    className='w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-[#0C3B2E] uppercase focus:outline-[#0C3B2E]'
+                  />
+                </div>
+                <div className='col-span-3'>
+                  <label className='block font-semibold text-slate-700 mb-1'>ชื่อเมนูอาหาร *</label>
+                  <input
+                    type='text'
+                    required
+                    placeholder='เช่น ก๋วยเตี๋ยวเป็ดตุ๋นยาจีน'
+                    value={productForm.name}
+                    onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                    className='w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium focus:outline-[#0C3B2E]'
+                  />
+                </div>
               </div>
 
               <div className='grid grid-cols-2 gap-3'>

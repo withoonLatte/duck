@@ -107,7 +107,13 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
 
   const filteredProducts = FIXTURE_PRODUCTS.filter((p) => {
     const matchCat = selectedCategory === 'ALL' || p.categoryId === selectedCategory;
-    const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.trim().toLowerCase();
+    const matchSearch =
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q) ||
+      (p.menuCode && p.menuCode.toLowerCase().includes(q)) ||
+      (p.sku && p.sku.toLowerCase().includes(q));
     return matchCat && matchSearch;
   });
 
@@ -252,8 +258,13 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
                       </div>
 
                       <div className='flex-1 min-w-0'>
-                        <h4 className='font-semibold text-slate-800 text-xs truncate leading-tight'>
-                          {product.name}
+                        <h4 className='font-bold text-slate-800 text-xs truncate leading-tight flex items-center gap-1.5'>
+                          {product.menuCode && (
+                            <span className='px-1.5 py-0.5 rounded-md bg-[#0C3B2E] text-[#84CC16] font-mono font-black text-[10px] tracking-wide shrink-0 shadow-2xs'>
+                              {product.menuCode}
+                            </span>
+                          )}
+                          <span className='truncate'>{product.name}</span>
                         </h4>
                         <p className='text-[10px] text-slate-500 line-clamp-1 mt-0.5'>
                           {product.description}

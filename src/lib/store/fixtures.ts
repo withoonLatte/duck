@@ -7,6 +7,7 @@ export interface FixtureProduct {
   price: number;
   costPrice: number;
   sku: string;
+  menuCode?: string;
   station: string;
   imageUrl: string;
   modifierGroupIds?: string[];
@@ -82,6 +83,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
     price: 65,
     costPrice: 26,
     sku: 'DUCK-NDL-01',
+    menuCode: 'N01',
     station: 'NOODLE_STATION',
     imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&auto=format&fit=crop&q=80',
   },
@@ -94,6 +96,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
     price: 80,
     costPrice: 32,
     sku: 'DUCK-NDL-02',
+    menuCode: 'N02',
     station: 'NOODLE_STATION',
     imageUrl: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=600&auto=format&fit=crop&q=80',
   },
@@ -106,6 +109,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
     price: 85,
     costPrice: 35,
     sku: 'DUCK-NDL-03',
+    menuCode: 'N03',
     station: 'NOODLE_STATION',
     imageUrl: 'https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=600&auto=format&fit=crop&q=80',
   },
@@ -118,6 +122,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
     price: 75,
     costPrice: 28,
     sku: 'DUCK-RICE-01',
+    menuCode: 'R01',
     station: 'DUCK_STATION',
     imageUrl: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=600&auto=format&fit=crop&q=80',
   },
@@ -130,6 +135,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
     price: 280,
     costPrice: 110,
     sku: 'DUCK-DISH-01',
+    menuCode: 'D01',
     station: 'DUCK_STATION',
     imageUrl: 'https://images.unsplash.com/photo-1514944298352-78d1a1b02846?w=600&auto=format&fit=crop&q=80',
   },
@@ -142,6 +148,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
     price: 150,
     costPrice: 50,
     sku: 'DUCK-SOUP-01',
+    menuCode: 'S01',
     station: 'SOUP_STATION',
     imageUrl: 'https://images.unsplash.com/photo-1547928576-a4a33237cbc3?w=600&auto=format&fit=crop&q=80',
   },
@@ -154,6 +161,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
     price: 25,
     costPrice: 6,
     sku: 'BEV-01',
+    menuCode: 'B01',
     station: 'BAR_STATION',
     imageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&auto=format&fit=crop&q=80',
   },
@@ -166,6 +174,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
     price: 25,
     costPrice: 6,
     sku: 'BEV-02',
+    menuCode: 'B02',
     station: 'BAR_STATION',
     imageUrl: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80',
   },
