@@ -34,6 +34,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='th' suppressHydrationWarning>
+      <head>
+        <link rel='icon' href='/favicon.ico' sizes='any' />
+        <link rel='icon' type='image/png' sizes='32x32' href='/favicon.png' />
+        <link rel='apple-touch-icon' sizes='180x180' href='/apple-touch-icon.png' />
+        <link rel='manifest' href='/manifest.json' />
+        <meta name='apple-mobile-web-app-title' content='เตี๋ยวเป็ด POS' />
+        <meta name='apple-mobile-web-app-capable' content='yes' />
+        <meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
+      </head>
       <body suppressHydrationWarning className='min-h-screen bg-slate-100/70 text-slate-900 antialiased flex flex-col font-sans'>
         <RestaurantProvider>
           <AppAuthGuard>
