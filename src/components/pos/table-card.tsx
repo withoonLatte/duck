@@ -37,20 +37,20 @@ export function TableCard({ table, onOpenOrder, onOpenBilling, onOpenQR, onOpenA
     switch (status) {
       case 'AVAILABLE':
         return {
-          cardBg: 'bg-white border-emerald-200/80 hover:border-emerald-500 hover:shadow-lg',
-          badgeBg: 'bg-emerald-100 text-[#0C3B2E] border-emerald-300',
+          cardBg: 'bg-white border-emerald-300 hover:border-emerald-500 hover:shadow-lg',
+          badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs',
           badgeText: '● โต๊ะว่าง',
         };
       case 'OCCUPIED':
         return {
-          cardBg: 'bg-white border-amber-300 hover:border-amber-500 shadow-md',
-          badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
+          cardBg: 'bg-white border-pink-300 hover:border-pink-500 shadow-md',
+          badgeBg: 'bg-pink-50 text-pink-700 border-pink-300 shadow-2xs',
           badgeText: '● มีลูกค้านั่งทาน',
         };
       case 'BILL_REQUESTED':
         return {
-          cardBg: 'bg-white border-[#D9531E]/40 hover:border-[#D9531E] shadow-md',
-          badgeBg: 'bg-[#FFEDD5] text-[#9A3412] border-[#D9531E]/30',
+          cardBg: 'bg-white border-rose-400 hover:border-rose-600 shadow-md',
+          badgeBg: 'bg-rose-50 text-rose-800 border-rose-300 shadow-2xs',
           badgeText: '● รอชำระเงิน',
         };
       default:
@@ -81,12 +81,21 @@ export function TableCard({ table, onOpenOrder, onOpenBilling, onOpenQR, onOpenA
       <div>
         <div className='flex items-start justify-between gap-2 mb-3'>
           {/* Left: Table Icon & Name */}
-          <div className='flex items-center space-x-3 min-w-0 flex-1'>
-            <div className='w-12 h-12 rounded-2xl bg-[#0C3B2E] text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0'>
-              {table.number}
+          <div className='flex items-center space-x-2.5 sm:space-x-3 min-w-0 flex-1'>
+            {/* Dining Table & Chairs Icon (Green for Available, Pink-Red for Occupied) */}
+            <div className='flex items-center shrink-0 gap-1.5'>
+              <img
+                src={table.status === 'AVAILABLE' ? '/images/tables/table-available.png' : '/images/tables/table-occupied.png'}
+                alt='Dining Table Icon'
+                className='h-11 sm:h-12 w-auto object-contain shrink-0 drop-shadow-xs transition-transform group-hover:scale-105'
+              />
+              <span className='font-black text-2xl sm:text-3xl text-slate-900 tracking-tight leading-none'>
+                {table.number.replace(/^[A-Za-z]+0*/, '') || table.number}
+              </span>
             </div>
+
             <div className='min-w-0 flex-1'>
-              <h4 className='font-semibold text-slate-800 text-sm sm:text-base truncate leading-tight'>
+              <h4 className='font-bold text-slate-800 text-sm sm:text-base truncate leading-tight'>
                 {table.name}
               </h4>
               <div className='flex items-center space-x-1.5 text-[11px] sm:text-xs text-slate-500 mt-1 whitespace-nowrap'>
