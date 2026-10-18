@@ -15,7 +15,6 @@ import {
   Smartphone, 
   Printer, 
   Percent, 
-  Divide, 
   ArrowRight
 } from 'lucide-react';
 
@@ -37,7 +36,6 @@ export function POSBillingDrawer({ table, onClose }: POSBillingDrawerProps) {
     activeRole,
     generateBill, 
     applyDiscount, 
-    splitBillByAmount, 
     processPayment 
   } = useRestaurant();
 
@@ -59,7 +57,6 @@ export function POSBillingDrawer({ table, onClose }: POSBillingDrawerProps) {
 
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'PROMPTPAY' | 'CREDIT_CARD'>('CASH');
   const [tenderAmount, setTenderAmount] = useState<number>(0);
-  const [splitCount, setSplitCount] = useState<number>(2);
   const [receiptData, setReceiptData] = useState<POSReceiptData | null>(null);
 
   const currentGrandTotal = activeBill ? activeBill.grandTotal : (activeOrder ? activeOrder.grandTotal : 0);
@@ -69,12 +66,6 @@ export function POSBillingDrawer({ table, onClose }: POSBillingDrawerProps) {
     if (!activeBill) return;
     const amount = (activeBill.subtotal * pct) / 100;
     applyDiscount(activeBill.id, amount, `ส่วนลด ${pct}%`);
-  };
-
-  const handleSplitEqual = (cnt: number) => {
-    if (!activeBill) return;
-    setSplitCount(cnt);
-    splitBillByAmount(activeBill.id, cnt);
   };
 
   const getCashierLabel = () => {
@@ -307,25 +298,6 @@ export function POSBillingDrawer({ table, onClose }: POSBillingDrawerProps) {
                     className='py-2 bg-slate-50 hover:bg-[#0C3B2E] hover:text-white rounded-xl border border-slate-200 font-black text-slate-700 text-xs transition-colors cursor-pointer active:scale-95'
                   >
                     ลด {pct}%
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Split Bill Tools */}
-            <div className='bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-sm space-y-2'>
-              <span className='font-black text-slate-800 flex items-center gap-1.5'>
-                <Divide className='w-4 h-4 text-[#0C3B2E]' />
-                <span>หารเท่า (Equal Split):</span>
-              </span>
-              <div className='grid grid-cols-4 gap-1.5 sm:gap-2'>
-                {[2, 3, 4, 5].map((cnt) => (
-                  <button
-                    key={cnt}
-                    onClick={() => handleSplitEqual(cnt)}
-                    className='py-2 bg-slate-50 hover:bg-[#0C3B2E] hover:text-white rounded-xl border border-slate-200 font-black text-slate-700 text-[11px] sm:text-xs transition-colors cursor-pointer active:scale-95'
-                  >
-                    {cnt} คน (฿{(currentGrandTotal / cnt).toFixed(0)})
                   </button>
                 ))}
               </div>
