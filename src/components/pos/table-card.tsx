@@ -94,11 +94,19 @@ export function TableCard({ table, onOpenOrder, onOpenBilling, onOpenQR, onOpenA
               </span>
             </div>
 
-            <div className='min-w-0 flex-1'>
-              <h4 className='font-bold text-slate-800 text-sm sm:text-base truncate leading-tight'>
-                {table.name}
-              </h4>
-              <div className='flex items-center space-x-1.5 text-[11px] sm:text-xs text-slate-500 mt-1 whitespace-nowrap'>
+            {/* Details: Zone / Seats / Floor */}
+            <div className='min-w-0 flex-1 space-y-0.5'>
+              {/* Table Zone/Sub-name if available (e.g., หน้าร้าน, ห้องแอร์, VIP) */}
+              {(() => {
+                const zoneMatch = table.name.match(/\((.*?)\)/);
+                const zone = zoneMatch ? zoneMatch[1] : '';
+                return zone ? (
+                  <div className='text-xs font-bold text-slate-700 truncate'>
+                    {zone}
+                  </div>
+                ) : null;
+              })()}
+              <div className='flex items-center space-x-1.5 text-[11px] sm:text-xs text-slate-500 whitespace-nowrap'>
                 <span className='flex items-center gap-1 font-medium'>
                   <Users className='w-3.5 h-3.5 text-slate-400' />
                   {table.guestCount ? `${table.guestCount}/${table.capacity}` : `${table.capacity}`} ที่นั่ง
