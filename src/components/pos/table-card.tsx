@@ -111,8 +111,6 @@ export function TableCard({ table, onOpenOrder, onOpenBilling, onOpenQR, onOpenA
                   <Users className='w-3.5 h-3.5 text-slate-400' />
                   {table.guestCount ? `${table.guestCount}/${table.capacity}` : `${table.capacity}`} ที่นั่ง
                 </span>
-                <span>•</span>
-                <span className='font-medium'>ชั้น {table.floor}</span>
               </div>
             </div>
           </div>
