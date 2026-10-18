@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRestaurant, StoreOrder } from '@/lib/store/restaurant-store';
 import { TableCard } from '@/components/pos/table-card';
+import { TakeawayCard } from '@/components/pos/takeaway-card';
 import { POSOrderDrawer } from '@/components/pos/pos-order-drawer';
 import { POSBillingDrawer } from '@/components/pos/pos-billing-drawer';
 import { QRApprovalModal } from '@/components/pos/qr-approval-modal';
@@ -166,6 +167,12 @@ export default function POSPage() {
 
       {/* Tables Grid */}
       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5'>
+        {/* Takeaway Card (ช่องแรกก่อนโต๊ะ 1) */}
+        <TakeawayCard
+          onOpenOrder={(t) => setActiveOrderTable(t)}
+          onOpenBilling={(t) => setActiveBillingTable(t)}
+        />
+
         {filteredTables.map((table) => (
           <TableCard 
             key={table.id} 
