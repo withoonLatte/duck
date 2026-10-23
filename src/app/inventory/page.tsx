@@ -51,6 +51,7 @@ export default function InventoryAndMenuPage() {
   const [editingProduct, setEditingProduct] = useState<FixtureProduct | null>(null);
   const [productForm, setProductForm] = useState<Omit<FixtureProduct, 'id'>>({
     name: '',
+    nickname: '',
     category: 'ก๋วยเตี๋ยว & บะหมี่เป็ด',
     categoryId: 'cat-01',
     description: '',
@@ -96,6 +97,7 @@ export default function InventoryAndMenuPage() {
     setEditingProduct(null);
     setProductForm({
       name: '',
+      nickname: '',
       menuCode: '',
       category: 'ก๋วยเตี๋ยว & บะหมี่เป็ด',
       categoryId: 'cat-01',
@@ -113,6 +115,7 @@ export default function InventoryAndMenuPage() {
     setEditingProduct(prod);
     setProductForm({
       name: prod.name,
+      nickname: prod.nickname || '',
       menuCode: prod.menuCode || '',
       category: prod.category,
       categoryId: prod.categoryId,
@@ -228,7 +231,13 @@ export default function InventoryAndMenuPage() {
   // Filtered Products
   const filteredProducts = products.filter((p) => {
     const matchCat = selectedCategory === 'ALL' || p.categoryId === selectedCategory || p.category === selectedCategory;
-    const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchSearch =
+      p.name.toLowerCase().includes(q) ||
+      (p.nickname && p.nickname.toLowerCase().includes(q)) ||
+      (p.menuCode && p.menuCode.toLowerCase().includes(q)) ||
+      (p.sku && p.sku.toLowerCase().includes(q)) ||
+      p.description.toLowerCase().includes(q);
     return matchCat && matchSearch;
   });
 
@@ -383,7 +392,7 @@ export default function InventoryAndMenuPage() {
                   {/* Body Content */}
                   <div className='p-4 space-y-2 flex-1 flex flex-col justify-between'>
                     <div>
-                      <h4 className='font-bold text-slate-900 text-sm sm:text-base leading-snug flex items-center gap-1.5'>
+                      <h4 className='font-bold text-slate-900 text-sm sm:text-base leading-snug flex items-center gap-1.5 flex-wrap'>
                         {prod.menuCode && (
                           <span className='px-2 py-0.5 rounded-md bg-[#0C3B2E] text-[#84CC16] font-mono font-black text-xs shrink-0 shadow-2xs'>
                             {prod.menuCode}
@@ -391,6 +400,13 @@ export default function InventoryAndMenuPage() {
                         )}
                         <span className='truncate'>{prod.name}</span>
                       </h4>
+                      {prod.nickname && (
+                        <div className='mt-1'>
+                          <span className='inline-flex items-center px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/80 text-[10px] font-bold'>
+                            ชื่อเล่น: {prod.nickname}
+                          </span>
+                        </div>
+                      )}
                       <p className='text-[11px] text-slate-500 line-clamp-2 mt-1 font-normal'>{prod.description}</p>
                     </div>
 
@@ -700,8 +716,8 @@ export default function InventoryAndMenuPage() {
             </div>
 
             <form onSubmit={handleSaveProduct} className='space-y-3.5 text-xs'>
-              <div className='grid grid-cols-4 gap-3'>
-                <div>
+              <div className='grid grid-cols-1 sm:grid-cols-12 gap-3'>
+                <div className='sm:col-span-3'>
                   <label className='block font-semibold text-slate-700 mb-1'>รหัสเมนู (Code)</label>
                   <input
                     type='text'
@@ -711,15 +727,25 @@ export default function InventoryAndMenuPage() {
                     className='w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-[#0C3B2E] uppercase focus:outline-[#0C3B2E]'
                   />
                 </div>
-                <div className='col-span-3'>
+                <div className='sm:col-span-5'>
                   <label className='block font-semibold text-slate-700 mb-1'>ชื่อเมนูอาหาร *</label>
                   <input
                     type='text'
                     required
-                    placeholder='เช่น ก๋วยเตี๋ยวเป็ดตุ๋นยาจีน'
+                    placeholder='เช่น ก๋วยเตี๋ยวเป็ดพะโล้'
                     value={productForm.name}
                     onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                     className='w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium focus:outline-[#0C3B2E]'
+                  />
+                </div>
+                <div className='sm:col-span-4'>
+                  <label className='block font-semibold text-slate-700 mb-1'>ชื่อเล่น (Nickname)</label>
+                  <input
+                    type='text'
+                    placeholder='เช่น เตี๋ยวเป็ด'
+                    value={productForm.nickname || ''}
+                    onChange={(e) => setProductForm({ ...productForm, nickname: e.target.value })}
+                    className='w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium focus:outline-[#0C3B2E]'
                   />
                 </div>
               </div>

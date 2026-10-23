@@ -185,12 +185,22 @@ export function parseGboardVoiceOrder(
 
     for (const prod of availableProducts) {
       const pName = prod.name.replace(/\s+/g, '').toLowerCase();
+      const pNickname = (prod.nickname || '').replace(/\s+/g, '').toLowerCase();
       const pCode = (prod.menuCode || '').toLowerCase();
       let score = 0;
 
       // Exact code match (e.g. "n01", "b02")
       if (pCode && cleanedSearchName.includes(pCode)) {
-        score += 80;
+        score += 85;
+      }
+
+      // Nickname match (e.g. "เตี๋ยวเป็ด", "หมี่หยกเป็ด")
+      if (pNickname) {
+        if (cleanedSearchName === pNickname) {
+          score += 100;
+        } else if (cleanedSearchName.includes(pNickname) || pNickname.includes(cleanedSearchName)) {
+          score += 75;
+        }
       }
 
       // Exact name match

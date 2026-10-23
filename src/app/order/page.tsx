@@ -95,6 +95,7 @@ function CustomerQROrderContent() {
     const matchSearch =
       !q ||
       p.name.toLowerCase().includes(q) ||
+      (p.nickname && p.nickname.toLowerCase().includes(q)) ||
       p.description.toLowerCase().includes(q) ||
       (p.menuCode && p.menuCode.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q));
@@ -395,7 +396,12 @@ function CustomerQROrderContent() {
                       )}
                       <span className='truncate'>{product.name}</span>
                     </h4>
-                    <p className='text-[11px] text-slate-500 line-clamp-2 leading-relaxed mt-0.5'>
+                    {product.nickname && (
+                      <span className='inline-block text-[9px] text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded font-semibold border border-amber-200/60 mt-0.5'>
+                        {product.nickname}
+                      </span>
+                    )}
+                    <p className='text-[11px] text-slate-500 line-clamp-1 leading-relaxed mt-0.5'>
                       {product.description}
                     </p>
                   </div>

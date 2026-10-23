@@ -113,6 +113,7 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
     const matchSearch =
       !q ||
       p.name.toLowerCase().includes(q) ||
+      (p.nickname && p.nickname.toLowerCase().includes(q)) ||
       p.description.toLowerCase().includes(q) ||
       (p.menuCode && p.menuCode.toLowerCase().includes(q)) ||
       (p.sku && p.sku.toLowerCase().includes(q));
@@ -277,6 +278,13 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
                           )}
                           <span className='truncate'>{product.name}</span>
                         </h4>
+                        {product.nickname && (
+                          <div className='mt-0.5'>
+                            <span className='inline-block text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded font-semibold border border-amber-200/60'>
+                              {product.nickname}
+                            </span>
+                          </div>
+                        )}
                         <p className='text-[10px] text-slate-500 line-clamp-1 mt-0.5'>
                           {product.description}
                         </p>

@@ -1,6 +1,7 @@
 export interface FixtureProduct {
   id: string;
   name: string;
+  nickname?: string;
   category: string;
   categoryId: string;
   description: string;
@@ -77,6 +78,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
   {
     id: 'p-01',
     name: 'ก๋วยเตี๋ยวเป็ดพะโล้',
+    nickname: 'เตี๋ยวเป็ด',
     category: 'ก๋วยเตี๋ยว & บะหมี่เป็ด',
     categoryId: 'cat-01',
     description: 'เนื้อเป็ดนุ่ม ชุ่มน้ำพะโล้หอมเครื่องเทศยาจีน เลือกเส้นได้ตามชอบ',
@@ -90,6 +92,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
   {
     id: 'p-02',
     name: 'บะหมี่หยกเป็ดย่างฮ่องกง',
+    nickname: 'หมี่หยกเป็ด',
     category: 'ก๋วยเตี๋ยว & บะหมี่เป็ด',
     categoryId: 'cat-01',
     description: 'บะหมี่หยกเหนียวนุ่ม เป็ดย่างหนังกรอบ ราดซอสหวานกลมกล่อมสูตรฮ่องกง',
@@ -103,6 +106,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
   {
     id: 'p-03',
     name: 'ก๋วยเตี๋ยวเป็ดตุ๋นเห็ดหอม',
+    nickname: 'เป็ดตุ๋นเห็ด',
     category: 'ก๋วยเตี๋ยว & บะหมี่เป็ด',
     categoryId: 'cat-01',
     description: 'เป็ดตุ๋นเปื่อยละลายในปาก เห็ดหอมคัดพิเศษ น้ำซุปหอมกลมกล่อม',
@@ -116,6 +120,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
   {
     id: 'p-04',
     name: 'ข้าวหน้าเป็ดย่างโบราณ',
+    nickname: 'ข้าวหน้าเป็ด',
     category: 'ข้าว & จานเดียว',
     categoryId: 'cat-02',
     description: 'ข้าวหอมมะลิร้อนๆ โปะเป็ดย่างพร้อมน้ำราดรสเด็ด แตงกวาและขิงดอง',
@@ -129,6 +134,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
   {
     id: 'p-05',
     name: 'เป็ดย่างจานใหญ่ (ครึ่งตัว)',
+    nickname: 'เป็ดย่างจาน',
     category: 'เป็ดจานเดี่ยว & ต้มซุป',
     categoryId: 'cat-03',
     description: 'เป็ดย่างสูตรฮ่องกง หนังกรอบเนื้อนุ่ม เสิร์ฟพร้อมน้ำราดและพริกดองสูตรโบราณ',
@@ -142,6 +148,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
   {
     id: 'p-06',
     name: 'ต้มซุปเปอร์ปีกขาเป็ดหม้อไฟ',
+    nickname: 'ซุปเปอร์เป็ด',
     category: 'เป็ดจานเดี่ยว & ต้มซุป',
     categoryId: 'cat-03',
     description: 'รสแซ่บจัดจ้าน เปรี้ยว เผ็ด กลมกล่อม ปีกขาเป็ดเปื่อยนุ่ม หอมผักชีฝรั่ง',
@@ -155,6 +162,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
   {
     id: 'p-07',
     name: 'ชาดำเย็นโบราณ',
+    nickname: 'ชาดำเย็น',
     category: 'เครื่องดื่มสมุนไพร & น้ำ',
     categoryId: 'cat-04',
     description: 'ชาไทยหอมเข้มข้น หวานชื่นใจ ชงสดใหม่ทุกวัน',
@@ -168,6 +176,7 @@ export const FIXTURE_PRODUCTS: FixtureProduct[] = [
   {
     id: 'p-08',
     name: 'น้ำเก๊กฮวยดอกแท้',
+    nickname: 'เก๊กฮวย',
     category: 'เครื่องดื่มสมุนไพร & น้ำ',
     categoryId: 'cat-04',
     description: 'เก๊กฮวยต้มสดจากดอกเก๊กฮวยแท้ หวานน้อย ชุ่มคอ แก้ร้อนใน',

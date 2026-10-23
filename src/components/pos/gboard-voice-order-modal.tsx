@@ -348,6 +348,11 @@ export function GboardVoiceOrderModal({
                         <span className='font-bold text-slate-900 text-xs truncate'>
                           {it.name}
                         </span>
+                        {it.matchedProduct?.nickname && (
+                          <span className='px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-900 text-[9px] font-semibold'>
+                            {it.matchedProduct.nickname}
+                          </span>
+                        )}
                         {it.matchedProduct && (
                           <span className='px-1.5 py-0.2 rounded-full bg-emerald-100 text-[#0C3B2E] text-[9px] font-bold'>
                             ตรงเมนูร้าน
