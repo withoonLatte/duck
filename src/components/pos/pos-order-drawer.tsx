@@ -5,6 +5,7 @@ import { useRestaurant, StoreOrderItem } from '@/lib/store/restaurant-store';
 import { FIXTURE_PRODUCTS, FixtureProduct } from '@/lib/store/fixtures';
 import { ModifierModal } from '@/components/order/modifier-modal';
 import { VoidItemModal } from './void-item-modal';
+import { GboardVoiceOrderModal } from './gboard-voice-order-modal';
 import { 
   X, 
   UtensilsCrossed, 
@@ -56,6 +57,7 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
   const [showMobileCartSheet, setShowMobileCartSheet] = useState(false);
   const [voidTargetItem, setVoidTargetItem] = useState<StoreOrderItem | null>(null);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
   const toggleVoiceSearch = () => {
     const SpeechRecognition =
@@ -195,11 +197,20 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
                 <Search className='w-4 h-4 absolute left-3.5 text-slate-400' />
                 <input
                   type='text'
-                  placeholder='พิมพ์ค้นหาชื่อเมนูอาหาร หรือรหัส SKU...'
+                  placeholder='ค้นหาเมนู หรือแตะปุ่มไมค์เพื่อพูด...'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className='w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-[#0C3B2E] shadow-xs transition-all'
+                  className='w-full pl-10 pr-24 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-[#0C3B2E] shadow-xs transition-all'
                 />
+                <button
+                  type='button'
+                  onClick={() => setIsVoiceModalOpen(true)}
+                  className='absolute right-1.5 px-2.5 py-1.5 bg-[#0C3B2E] hover:bg-[#072E20] text-white rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer'
+                  title='พูดสั่งรายการด้วยเสียงผ่านแป้นพิมพ์มือถือ (Gboard)'
+                >
+                  <Mic className='w-3.5 h-3.5 text-[#84CC16] animate-pulse' />
+                  <span>พูดสั่ง</span>
+                </button>
                 {searchQuery && (
                   <button
                     type='button'
@@ -574,6 +585,13 @@ export function POSOrderDrawer({ table, onClose, onProceedToBilling }: POSOrderD
             </div>
           </div>
         )}
+
+        {/* GBOARD VOICE TO POS MODAL */}
+        <GboardVoiceOrderModal
+          isOpen={isVoiceModalOpen}
+          onClose={() => setIsVoiceModalOpen(false)}
+          targetTable={table}
+        />
 
         {/* MODIFIER MODAL */}
         {activeModalProduct && (

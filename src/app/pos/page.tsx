@@ -8,13 +8,15 @@ import { POSOrderDrawer } from '@/components/pos/pos-order-drawer';
 import { POSBillingDrawer } from '@/components/pos/pos-billing-drawer';
 import { QRApprovalModal } from '@/components/pos/qr-approval-modal';
 import { QRCodeModal } from '@/components/pos/qr-code-modal';
+import { GboardVoiceOrderModal } from '@/components/pos/gboard-voice-order-modal';
 import { 
   Store, 
   Filter, 
   QrCode, 
   ArrowRight, 
   Receipt,
-  Settings
+  Settings,
+  Mic
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -27,6 +29,7 @@ export default function POSPage() {
   const [activeBillingTable, setActiveBillingTable] = useState<any | null>(null);
   const [selectedQRTable, setSelectedQRTable] = useState<any | null>(null);
   const [selectedApprovalOrder, setSelectedApprovalOrder] = useState<StoreOrder | null>(null);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
   const filteredTables = tables.filter((t) => (selectedFloor === 'ALL' ? true : t.floor === selectedFloor));
 
@@ -147,6 +150,14 @@ export default function POSPage() {
         </div>
 
         <div className='flex items-center gap-2 shrink-0'>
+          <button
+            type='button'
+            onClick={() => setIsVoiceModalOpen(true)}
+            className='flex-1 sm:flex-none justify-center px-4 py-2 bg-[#0C3B2E] hover:bg-[#072E20] text-white rounded-2xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer whitespace-nowrap'
+          >
+            <Mic className='w-4 h-4 text-[#84CC16] animate-pulse' />
+            <span>🎙️ พูดสั่งรายการ (Gboard)</span>
+          </button>
           <Link
             href='/order?table=T01'
             target='_blank'
@@ -217,6 +228,12 @@ export default function POSPage() {
           onClose={() => setSelectedApprovalOrder(null)}
         />
       )}
+
+      {/* Gboard Voice-to-POS Ordering Modal */}
+      <GboardVoiceOrderModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+      />
     </div>
   );
 }
